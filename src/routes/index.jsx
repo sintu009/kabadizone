@@ -8,11 +8,20 @@ import AdminLayout from '../layouts/AdminLayout';
 
 // Wrappers
 import ProtectedRoute from './ProtectedRoute';
+import ScrapboyProtectedRoute from './ScrapboyProtectedRoute';
 
 // Lazy loading pages
 const HomePage = lazy(() => import('../modules/landing/pages/HomePage'));
 const ScrapRatePage = lazy(() => import('../modules/landing/pages/ScrapRatePage'));
+const AboutPage = lazy(() => import('../modules/landing/pages/AboutPage'));
+const ContactPage = lazy(() => import('../modules/landing/pages/ContactPage'));
+
+const ScrapboyLoginPage = lazy(() => import('../modules/scrapboy/pages/LoginPage'));
 const ScrapboyDashboard = lazy(() => import('../modules/scrapboy/pages/DashboardPage'));
+const ScrapboyPickups = lazy(() => import('../modules/scrapboy/pages/PickupsPage'));
+const ScrapboyEarnings = lazy(() => import('../modules/scrapboy/pages/EarningsPage'));
+const ScrapboyProfile = lazy(() => import('../modules/scrapboy/pages/ProfilePage'));
+
 const AdminLoginPage = lazy(() => import('../modules/admin/pages/AdminLoginPage'));
 const AdminDashboard = lazy(() => import('../modules/admin/pages/AdminDashboardPage'));
 const AdminUsers = lazy(() => import('../modules/admin/pages/AdminUsersPage'));
@@ -51,21 +60,76 @@ export const router = createBrowserRouter([
           </Suspense>
         ),
       },
+      {
+        path: 'about',
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <AboutPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'contact',
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <ContactPage />
+          </Suspense>
+        ),
+      },
     ],
   },
 
-  // Scrapboy Portal
+  // Scrapboy Login
+  {
+    path: '/scrapboy/login',
+    element: (
+      <Suspense fallback={<PageLoader />}>
+        <ScrapboyLoginPage />
+      </Suspense>
+    ),
+  },
+
+  // Scrapboy Portal (Protected)
   {
     path: '/scrapboy',
-    element: <ScrapLayout />,
+    element: <ScrapboyProtectedRoute />,
     children: [
       {
-        index: true,
-        element: (
-          <Suspense fallback={<PageLoader />}>
-            <ScrapboyDashboard />
-          </Suspense>
-        ),
+        element: <ScrapLayout />,
+        children: [
+          {
+            index: true,
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <ScrapboyDashboard />
+              </Suspense>
+            ),
+          },
+          {
+            path: 'pickups',
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <ScrapboyPickups />
+              </Suspense>
+            ),
+          },
+          {
+            path: 'earnings',
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <ScrapboyEarnings />
+              </Suspense>
+            ),
+          },
+          {
+            path: 'profile',
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <ScrapboyProfile />
+              </Suspense>
+            ),
+          },
+        ],
       },
     ],
   },

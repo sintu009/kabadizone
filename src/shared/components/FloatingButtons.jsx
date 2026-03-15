@@ -10,8 +10,8 @@ const FloatingButtons = () => (
   <div className="fixed bottom-6 z-50 w-full pointer-events-none px-6">
     {/* Call - Left */}
     <a
-      href="tel:+911234567890"
-      className="pointer-events-auto absolute left-6 bottom-0 flex items-center justify-center h-14 w-14 rounded-full bg-blue-500 text-white shadow-lg shadow-blue-500/30 hover:bg-blue-600 hover:scale-110 transition-all duration-300"
+      href="tel:+917667806494"
+      className="pointer-events-auto absolute left-6 bottom-0 flex items-center justify-center h-14 w-14 rounded-full bg-blue-600 text-white shadow-lg shadow-blue-500/30 hover:bg-blue-600 hover:scale-110 transition-all duration-300"
       aria-label="Call us"
     >
       <Phone className="h-6 w-6" />
@@ -19,7 +19,7 @@ const FloatingButtons = () => (
 
     {/* WhatsApp - Right */}
     <a
-      href="https://wa.me/911234567890"
+      href="https://wa.me/917667806494"
       target="_blank"
       rel="noopener noreferrer"
       className="pointer-events-auto absolute right-6 bottom-0 flex items-center justify-center h-14 w-14 rounded-full bg-green-500 text-white shadow-lg shadow-green-500/30 hover:bg-green-600 hover:scale-110 transition-all duration-300"

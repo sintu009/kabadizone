@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { Menu, X, User, Home, DollarSign, Info, Phone, Truck, Globe } from 'lucide-react';
+import { Menu, X, User, Home, DollarSign, Info, Phone, Truck, Globe, Recycle, ArrowRight, MapPin, Mail } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import AuthModal from '../shared/components/AuthModal';
@@ -44,7 +44,7 @@ const LandingLayout = () => {
       <header
         className={`fixed z-50 transition-all duration-500 ${
           scrolled
-            ? 'top-4 left-4 right-4 md:left-8 md:right-8 bg-white/15 backdrop-blur-sm border border-white/40 shadow-lg shadow-black/5 rounded-2xl py-2.5'
+            ? 'top-3 left-3 right-3 md:left-6 md:right-6 bg-white/80 backdrop-blur-xl border border-gray-200/50 shadow-lg shadow-black/5 rounded-2xl py-2.5'
             : 'top-0 left-0 right-0 bg-white border-b border-gray-200 py-3.5'
         }`}
       >
@@ -80,7 +80,7 @@ const LandingLayout = () => {
               </button>
               <button
                 onClick={() => setAuthOpen(true)}
-                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors"
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition-colors"
               >
                 <User className="h-4 w-4" />
                 {t('nav.login')}
@@ -172,40 +172,136 @@ const LandingLayout = () => {
       </main>
 
       {/* Footer */}
-      <footer className="bg-gray-50 border-t border-gray-200 mt-auto pt-14 pb-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-10 mb-10">
-            <div className="col-span-1 md:col-span-2">
-              <img src={LOGO_URL} alt="Kabadizone" className="h-8 w-auto mb-4" />
-              <p className="text-gray-500 text-sm max-w-sm leading-relaxed">
-                {t('footer.description')}
-              </p>
-            </div>
+      <footer className="relative mt-auto bg-white border-t border-gray-100 overflow-hidden">
+        {/* Background Glow */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-emerald-50/60 rounded-full blur-[150px] pointer-events-none" />
 
-            <div>
-              <h4 className="text-gray-900 font-semibold text-sm mb-4">{t('footer.quickLinks')}</h4>
-              <ul className="space-y-2.5 p-0 m-0 list-none">
-                <li><Link to="/" className="text-sm text-gray-500 hover:text-emerald-600 transition-colors">{t('nav.home')}</Link></li>
-                <li><Link to="/#rates" className="text-sm text-gray-500 hover:text-emerald-600 transition-colors">{t('nav.scrapRate')}</Link></li>
-                <li><Link to="/about" className="text-sm text-gray-500 hover:text-emerald-600 transition-colors">{t('nav.aboutUs')}</Link></li>
-                <li><Link to="/contact" className="text-sm text-gray-500 hover:text-emerald-600 transition-colors">{t('nav.contactUs')}</Link></li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="text-gray-900 font-semibold text-sm mb-4">{t('footer.portals')}</h4>
-              <ul className="space-y-2.5 p-0 m-0 list-none">
-                <li><Link to="/scrapboy" className="text-sm text-gray-500 hover:text-emerald-600 transition-colors">{t('footer.scrapBoyPortal')}</Link></li>
-                <li><Link to="/admin" className="text-sm text-gray-500 hover:text-emerald-600 transition-colors">{t('footer.admin')}</Link></li>
-              </ul>
+        <div className="relative z-10 pt-16 pb-8">
+          {/* Eco Impact Ticker */}
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-14">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {[
+                { emoji: '♻️', value: '12,000+', label: t('footer.kgRecycled') },
+                { emoji: '🏠', value: '3,500+', label: t('footer.happyHomes') },
+                { emoji: '🌱', value: '8 Tons', label: t('footer.co2Saved') },
+                { emoji: '🤝', value: '50+', label: t('footer.scrapboys') },
+              ].map((stat, idx) => (
+                <div key={idx} className="bg-emerald-50/80 border border-emerald-100 rounded-2xl p-4 text-center hover:bg-emerald-50 hover:border-emerald-200 transition-colors">
+                  <span className="text-2xl block mb-1">{stat.emoji}</span>
+                  <p className="text-gray-900 font-bold text-lg">{stat.value}</p>
+                  <p className="text-gray-500 text-xs">{stat.label}</p>
+                </div>
+              ))}
             </div>
           </div>
 
-          <div className="pt-6 border-t border-gray-200 flex flex-col md:flex-row justify-between items-center text-xs text-gray-400">
-            <p>&copy; {new Date().getFullYear()} {t('footer.rights')}</p>
-            <div className="mt-3 md:mt-0 flex gap-4">
-              <Link to="/privacy" className="hover:text-gray-600 transition-colors">{t('footer.privacy')}</Link>
-              <Link to="/terms" className="hover:text-gray-600 transition-colors">{t('footer.terms')}</Link>
+          {/* Main Footer Content */}
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-10 pb-12 border-b border-gray-100">
+              {/* Brand */}
+              <div className="lg:col-span-3">
+                <div className="mb-4">
+                  <img src={LOGO_URL} alt="Kabadizone" className="h-9 w-auto" />
+                </div>
+                <p className="text-gray-500 text-sm leading-relaxed max-w-xs">
+                  {t('footer.description')}
+                </p>
+              </div>
+
+              {/* Quick Links */}
+              <div className="lg:col-span-2">
+                <h4 className="text-emerald-600 font-semibold text-xs uppercase tracking-widest mb-5">{t('footer.quickLinks')}</h4>
+                <ul className="space-y-3 p-0 m-0 list-none">
+                  {[
+                    { to: '/', label: t('nav.home') },
+                    { to: '/#rates', label: t('nav.scrapRate') },
+                    { to: '/about', label: t('nav.aboutUs') },
+                    { to: '/contact', label: t('nav.contactUs') },
+                  ].map((link) => (
+                    <li key={link.to}>
+                      <Link to={link.to} className="group text-sm text-gray-500 hover:text-emerald-600 transition-colors flex items-center gap-1.5">
+                        <span className="w-0 group-hover:w-2 h-px bg-emerald-500 transition-all duration-300" />
+                        {link.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Portals */}
+              <div className="lg:col-span-2">
+                <h4 className="text-emerald-600 font-semibold text-xs uppercase tracking-widest mb-5">{t('footer.portals')}</h4>
+                <ul className="space-y-3 p-0 m-0 list-none">
+                  {[
+                    { to: '/scrapboy', label: t('footer.scrapBoyPortal') },
+                    { to: '/admin', label: t('footer.admin') },
+                  ].map((link) => (
+                    <li key={link.to}>
+                      <Link to={link.to} className="group text-sm text-gray-500 hover:text-emerald-600 transition-colors flex items-center gap-1.5">
+                        <span className="w-0 group-hover:w-2 h-px bg-emerald-500 transition-all duration-300" />
+                        {link.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Get In Touch */}
+              <div className="lg:col-span-5">
+                <h4 className="text-emerald-600 font-semibold text-xs uppercase tracking-widest mb-5">{t('footer.getInTouch')}</h4>
+                <div className="space-y-4">
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-50 border border-emerald-100 flex items-center justify-center shrink-0 mt-0.5">
+                      <MapPin className="h-4 w-4 text-emerald-600" />
+                    </div>
+                    <p className="text-gray-500 text-sm leading-relaxed">{t('footer.address')}</p>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-50 border border-emerald-100 flex items-center justify-center shrink-0 mt-0.5">
+                      <Phone className="h-4 w-4 text-emerald-600" />
+                    </div>
+                    <div className="space-y-1">
+                      <a href="tel:+919065402005" className="block text-sm text-gray-500 hover:text-emerald-600 transition-colors">+91 9065402005</a>
+                      <a href="tel:+917667806494" className="block text-sm text-gray-500 hover:text-emerald-600 transition-colors">+91 7667806494</a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Newsletter Strip */}
+            <div className="py-8 border-b border-gray-100 flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
+              <div className="flex-1 text-center sm:text-left">
+                <h4 className="text-gray-900 font-semibold text-sm">{t('footer.stayUpdated')}</h4>
+                <p className="text-gray-400 text-xs mt-0.5">{t('footer.newsletterDesc')}</p>
+              </div>
+              <div className="flex gap-2 w-full sm:w-auto sm:min-w-[320px]">
+                <div className="flex-1 relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <input
+                    type="email"
+                    placeholder={t('footer.emailPlaceholder')}
+                    className="w-full pl-9 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors"
+                  />
+                </div>
+                <button className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl transition-colors shrink-0">
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Bottom Bar */}
+            <div className="pt-6 flex flex-col sm:flex-row justify-between items-center gap-3">
+              <p className="text-xs text-gray-400">&copy; {new Date().getFullYear()} {t('footer.rights')}</p>
+              <div className="flex items-center gap-1.5 text-xs text-gray-400">
+                <span>{t('footer.madeWith')}</span>
+                <span className="text-red-400 animate-pulse">♥</span>
+                <span>{t('footer.inIndia')}</span>
+              </div>
+              <div className="flex gap-6 text-xs text-gray-400">
+                <Link to="/privacy" className="hover:text-emerald-600 transition-colors">{t('footer.privacy')}</Link>
+                <Link to="/terms" className="hover:text-emerald-600 transition-colors">{t('footer.terms')}</Link>
+              </div>
             </div>
           </div>
         </div>

@@ -270,7 +270,7 @@ const HomePage = () => {
         </section>
 
         {/* Scrap Rate Price */}
-        <section className="py-24 relative bg-gray-50/50" id="rates">
+        <section className="relative bg-gray-50/50" id="rates">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10">
             <div className="text-center mb-16">
               <h2 className="text-emerald-600 font-semibold tracking-widest uppercase text-sm mb-3">{t('rates.subtitle')}</h2>
@@ -351,93 +351,87 @@ const HomePage = () => {
 
 
         {/* Why Choose Us */}
-        <section className="py-24">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="bg-white border border-gray-100 rounded-3xl overflow-hidden shadow-sm">
-              <div className="grid grid-cols-1 lg:grid-cols-2 p-8 md:p-16 gap-16">
-                <div className="flex flex-col justify-center">
-                  <h2 className="text-emerald-600 font-semibold tracking-widest uppercase text-sm mb-3">{t('whyUs.subtitle')}</h2>
-                  <h3 className="text-3xl md:text-5xl font-bold text-gray-900 mb-8 leading-tight">{t('whyUs.title')}</h3>
+        <section className="py-24 relative overflow-hidden">
+          <div className="absolute inset-0 bg-emerald-950" />
+          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-emerald-900/50 rounded-full blur-[120px] pointer-events-none" />
+          <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-teal-900/30 rounded-full blur-[120px] pointer-events-none" />
 
-                  <div className="space-y-8">
-                    {[
-                      { icon: ShieldCheck, title: t('whyUs.digitalWeighing'), desc: t('whyUs.digitalDesc') },
-                      { icon: DollarSign, title: t('whyUs.bestRates'), desc: t('whyUs.ratesDesc') },
-                      { icon: Leaf, title: t('whyUs.ecoFriendly'), desc: t('whyUs.ecoDesc') }
-                    ].map((feature, idx) => (
-                      <div key={idx} className="flex items-start group">
-                        <div className="flex-shrink-0 mt-1">
-                          <div className="flex items-center justify-center h-12 w-12 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100 group-hover:bg-emerald-600 group-hover:text-white group-hover:border-emerald-600 transition-all">
-                            <feature.icon className="h-6 w-6" />
-                          </div>
-                        </div>
-                        <div className="ml-5">
-                          <h4 className="text-xl font-bold text-gray-900 mb-1">{feature.title}</h4>
-                          <p className="text-gray-500 leading-relaxed">{feature.desc}</p>
-                        </div>
-                      </div>
-                    ))}
+          <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-16">
+              <h2 className="text-emerald-400 font-semibold tracking-widest uppercase text-sm mb-3">{t('whyUs.subtitle')}</h2>
+              <h3 className="text-4xl md:text-5xl font-bold text-white leading-tight">{t('whyUs.title')}</h3>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-16">
+              {[
+                { icon: ShieldCheck, title: t('whyUs.digitalWeighing'), desc: t('whyUs.digitalDesc') },
+                { icon: DollarSign, title: t('whyUs.bestRates'), desc: t('whyUs.ratesDesc') },
+                { icon: Leaf, title: t('whyUs.ecoFriendly'), desc: t('whyUs.ecoDesc') },
+              ].map((feature, idx) => (
+                <div key={idx} className="group relative bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8 hover:bg-white/10 hover:border-emerald-500/30 transition-all duration-300">
+                  <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-emerald-500/0 via-emerald-500/0 to-emerald-500/0 group-hover:from-emerald-500/0 group-hover:via-emerald-400 group-hover:to-emerald-500/0 transition-all duration-500 rounded-t-2xl" />
+                  <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mb-6 group-hover:bg-emerald-500 group-hover:text-white group-hover:border-emerald-500 transition-all duration-300">
+                    <feature.icon className="h-7 w-7" />
                   </div>
+                  <h4 className="text-xl font-bold text-white mb-2">{feature.title}</h4>
+                  <p className="text-emerald-200/50 leading-relaxed">{feature.desc}</p>
                 </div>
+              ))}
+            </div>
 
-                <div className="flex items-center justify-center relative">
-                  <div className="w-full aspect-square max-w-md relative">
-                    <div className="absolute inset-0 bg-gradient-to-tr from-emerald-200 to-teal-100 rounded-full blur-[80px] opacity-40"></div>
-                    <div className="absolute inset-4 bg-white rounded-3xl border border-gray-100 flex flex-col p-8 z-10 shadow-lg">
-                      <div className="flex items-center space-x-4 mb-8 pb-8 border-b border-gray-100">
-                        <div className="h-14 w-14 rounded-full bg-emerald-50 flex items-center justify-center">
-                          <Recycle className="h-7 w-7 text-emerald-600" />
-                        </div>
-                        <div>
-                          <p className="text-gray-900 font-bold text-lg">{t('whyUs.impactTitle')}</p>
-                          <p className="text-emerald-600 text-sm">{t('whyUs.thisMonth')}</p>
-                        </div>
-                      </div>
-
-                      <div className="space-y-6 flex-1">
-                        {[
-                          { label: t('whyUs.cardboardSaved'), value: "2,450 kg", pct: "75%", color: "bg-emerald-500" },
-                          { label: t('whyUs.eWasteRecycled'), value: "840 kg", pct: "45%", color: "bg-emerald-400" },
-                          { label: t('whyUs.plasticProcessed'), value: "1,200 kg", pct: "60%", color: "bg-teal-500" },
-                        ].map((item, idx) => (
-                          <div key={idx}>
-                            <div className="flex justify-between text-sm mb-2">
-                              <span className="text-gray-500">{item.label}</span>
-                              <span className="text-gray-900 font-medium">{item.value}</span>
-                            </div>
-                            <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
-                              <div className={`h-full ${item.color} rounded-full`} style={{ width: item.pct }}></div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+            {/* Impact Stats Row */}
+            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 sm:p-8">
+              <div className="flex items-center gap-3 mb-8">
+                <div className="h-10 w-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+                  <Recycle className="h-5 w-5 text-emerald-400" />
+                </div>
+                <div>
+                  <p className="text-white font-bold">{t('whyUs.impactTitle')}</p>
+                  <p className="text-emerald-400/60 text-xs">{t('whyUs.thisMonth')}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                {[
+                  { label: t('whyUs.cardboardSaved'), value: '2,450 kg', pct: '75%' },
+                  { label: t('whyUs.eWasteRecycled'), value: '840 kg', pct: '45%' },
+                  { label: t('whyUs.plasticProcessed'), value: '1,200 kg', pct: '60%' },
+                ].map((item, idx) => (
+                  <div key={idx}>
+                    <div className="flex justify-between text-sm mb-2">
+                      <span className="text-emerald-200/50">{item.label}</span>
+                      <span className="text-white font-semibold">{item.value}</span>
+                    </div>
+                    <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden">
+                      <div className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full" style={{ width: item.pct }} />
                     </div>
                   </div>
-                </div>
+                ))}
               </div>
             </div>
           </div>
         </section>
 
         {/* CTA Section */}
-        <section className="py-24 relative overflow-hidden">
-          <div className="absolute inset-0 bg-emerald-600"></div>
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-emerald-500/40 blur-[120px] rounded-full pointer-events-none"></div>
+        <section className="py-20 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-4xl mx-auto relative overflow-hidden rounded-3xl bg-emerald-600 px-6 py-16 sm:px-12 sm:py-20 text-center">
+            <div className="absolute -top-24 -right-24 w-72 h-72 bg-emerald-500/40 rounded-full blur-[80px] pointer-events-none"></div>
+            <div className="absolute -bottom-24 -left-24 w-72 h-72 bg-teal-500/30 rounded-full blur-[80px] pointer-events-none"></div>
 
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
-            <h2 className="text-4xl md:text-5xl font-extrabold text-white mb-4">
-              {t('cta.title')}
-            </h2>
-            <p className="text-lg text-emerald-100 mb-10 max-w-xl mx-auto">
-              {t('cta.subtitle')}
-            </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Link to="/schedule" className="w-full sm:w-auto px-8 py-3 bg-white text-emerald-700 rounded-xl font-semibold text-sm hover:bg-emerald-50 transition-colors shadow-lg">
-                {t('cta.schedule')}
-              </Link>
-              <Link to="/scrapboy/login" className="w-full sm:w-auto px-8 py-3 bg-emerald-700 border border-emerald-500 text-white rounded-xl font-semibold text-sm hover:bg-emerald-800 transition-colors">
-                {t('cta.partner')}
-              </Link>
+            <div className="relative z-10">
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white mb-4">
+                {t('cta.title')}
+              </h2>
+              <p className="text-base sm:text-lg text-emerald-100 mb-10 max-w-xl mx-auto leading-relaxed">
+                {t('cta.subtitle')}
+              </p>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                <Link to="/schedule" className="inline-flex items-center justify-center px-8 py-3 bg-white text-emerald-700 rounded-xl font-semibold text-sm hover:bg-emerald-50 transition-all hover:-translate-y-0.5 shadow-lg">
+                  {t('cta.schedule')}
+                </Link>
+                <Link to="/scrapboy/login" className="inline-flex items-center justify-center px-8 py-3 bg-emerald-700 border border-emerald-500 text-white rounded-xl font-semibold text-sm hover:bg-emerald-800 transition-all hover:-translate-y-0.5">
+                  {t('cta.partner')}
+                </Link>
+              </div>
             </div>
           </div>
         </section>
