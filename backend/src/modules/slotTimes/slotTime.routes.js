@@ -89,7 +89,7 @@ const SlotTimeController = require("./slotTime.controller");
  *                   items:
  *                     $ref: '#/components/schemas/SlotTime'
  */
-router.get("/", auth, role("ADMIN", "USER"), SlotTimeController.getSlotTimes);
+router.get("/", SlotTimeController.getSlotTimes);
 
 /**
  * @swagger

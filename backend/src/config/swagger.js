@@ -11,7 +11,7 @@ const options = {
     },
     servers: [
       {
-        url: "http://10.10.10.9:5000/api",
+        url: "http://localhost:5000/api/" || process.env.SERVER_URL,
         description: "Local API",
       },
     ],

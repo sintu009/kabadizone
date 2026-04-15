@@ -29,6 +29,7 @@ export const API_ENDPOINTS = {
     BASE: '/pickup-requests',
     PICKUPS: '/pickup-requests/pickups',
     GUEST: '/pickup-requests/guest',
+    GUEST_STATUS: '/pickup-requests/guest/status',
     UPDATE_STATUS: (id) => `/pickup-requests/pickups/${id}/status`,
   },
   PICKUP_ASSIGNMENTS: {

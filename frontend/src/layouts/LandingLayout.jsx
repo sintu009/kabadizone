@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { Menu, X, User, Home, DollarSign, Info, Phone, Truck, Globe, Recycle, ArrowRight, MapPin, Mail } from 'lucide-react';
+import { Menu, X, User, Home, DollarSign, Info, Phone, Truck, Globe, Recycle, ArrowRight, MapPin, Mail, Search } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import AuthModal from '../shared/components/AuthModal';
@@ -10,6 +10,7 @@ const LOGO_URL = 'https://res.cloudinary.com/dnimidvwh/image/upload/v1773520272/
 const NAV_KEYS = [
   { key: 'nav.home', to: '/', icon: Home },
   { key: 'nav.scrapRate', to: '/#rates', icon: DollarSign },
+  { key: 'nav.trackOrder', to: '/track', icon: Search },
   { key: 'nav.aboutUs', to: '/about', icon: Info },
   { key: 'nav.contactUs', to: '/contact', icon: Phone },
 ];

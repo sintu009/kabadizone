@@ -100,7 +100,9 @@ router.post("/", auth, role("ADMIN"), GarbagePricingController.create);
  *                         type: number
  *                         example: 15
  */
-router.get("/", auth, role("ADMIN"), GarbagePricingController.getAll);
+// router.get("/", auth, role("ADMIN"), GarbagePricingController.getAll);
+router.get("/", GarbagePricingController.getAll);
+
 
 /**
  * @swagger
@@ -145,7 +147,9 @@ router.get("/", auth, role("ADMIN"), GarbagePricingController.getAll);
  *       404:
  *         description: Not found
  */
-router.get("/:id", auth, role("ADMIN"), GarbagePricingController.getById);
+// router.get("/:id", auth, role("ADMIN"), GarbagePricingController.getById);
+router.get("/:id", GarbagePricingController.getById);
+
 
 /**
  * @swagger
