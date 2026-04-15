@@ -1,86 +1,103 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Calendar, Clock, MapPin, User, Truck, Search,
   CheckCircle2, AlertCircle, Filter, RefreshCw,
-  LayoutGrid, Table2, ChevronLeft, ChevronRight,
+  LayoutGrid, Table2, ChevronLeft, ChevronRight, Loader2, IndianRupee, Package,
 } from 'lucide-react';
 import ConfirmModal from '../../../shared/components/ConfirmModal';
+import apiClient from '../../../api/axios';
+import { API_ENDPOINTS } from '../../../api/endpoints';
 
-const STATUSES = ['All', 'Pending', 'Assigned', 'Completed', 'Cancelled'];
+const STATUSES = ['All', 'UNASSIGNED', 'ASSIGNED', 'COMPLETED', 'CANCELLED'];
 const PER_PAGE = 10;
 
-// Mock data — replace with API call
-const initialBookings = [
-  { id: 'PK-1001', customer: 'Rahul Sharma', phone: '98XXXXXX10', address: 'Sector 12, Noida', date: '2025-01-20', timeSlot: '10:00 AM - 12:00 PM', scrapTypes: ['Paper', 'Cardboard'], estimatedWeight: '~15 kg', status: 'Pending', assignedTo: null },
-  { id: 'PK-1002', customer: 'Priya Patel', phone: '98XXXXXX11', address: 'MG Road, Gurgaon', date: '2025-01-20', timeSlot: '2:00 PM - 4:00 PM', scrapTypes: ['Metal', 'Iron'], estimatedWeight: '~8 kg', status: 'Pending', assignedTo: null },
-  { id: 'PK-1003', customer: 'Amit Kumar', phone: '98XXXXXX12', address: 'Laxmi Nagar, Delhi', date: '2025-01-20', timeSlot: '10:00 AM - 12:00 PM', scrapTypes: ['Plastic', 'E-Waste'], estimatedWeight: '~5 kg', status: 'Assigned', assignedTo: 'Ravi Kumar' },
-  { id: 'PK-1004', customer: 'Sneha Reddy', phone: '98XXXXXX13', address: 'Banjara Hills, Hyderabad', date: '2025-01-19', timeSlot: '4:00 PM - 6:00 PM', scrapTypes: ['Paper'], estimatedWeight: '~20 kg', status: 'Completed', assignedTo: 'Deepak Verma' },
-  { id: 'PK-1005', customer: 'Vikram Singh', phone: '98XXXXXX14', address: 'Connaught Place, Delhi', date: '2025-01-20', timeSlot: '10:00 AM - 12:00 PM', scrapTypes: ['Iron', 'Metal'], estimatedWeight: '~30 kg', status: 'Pending', assignedTo: null },
-  { id: 'PK-1006', customer: 'Neha Gupta', phone: '98XXXXXX15', address: 'Andheri West, Mumbai', date: '2025-01-20', timeSlot: '2:00 PM - 4:00 PM', scrapTypes: ['E-Waste'], estimatedWeight: '~2 kg', status: 'Assigned', assignedTo: 'Suresh Yadav' },
-  { id: 'PK-1007', customer: 'Rajesh Khanna', phone: '98XXXXXX16', address: 'Koramangala, Bangalore', date: '2025-01-20', timeSlot: '4:00 PM - 6:00 PM', scrapTypes: ['Paper', 'Plastic'], estimatedWeight: '~10 kg', status: 'Pending', assignedTo: null },
-  { id: 'PK-1008', customer: 'Pooja Mehta', phone: '98XXXXXX17', address: 'Salt Lake, Kolkata', date: '2025-01-19', timeSlot: '10:00 AM - 12:00 PM', scrapTypes: ['Cardboard'], estimatedWeight: '~25 kg', status: 'Completed', assignedTo: 'Arun Patel' },
-  { id: 'PK-1009', customer: 'Sunil Das', phone: '98XXXXXX18', address: 'Jubilee Hills, Hyderabad', date: '2025-01-20', timeSlot: '2:00 PM - 4:00 PM', scrapTypes: ['Metal'], estimatedWeight: '~12 kg', status: 'Pending', assignedTo: null },
-  { id: 'PK-1010', customer: 'Kavita Rao', phone: '98XXXXXX19', address: 'Whitefield, Bangalore', date: '2025-01-20', timeSlot: '10:00 AM - 12:00 PM', scrapTypes: ['Paper', 'E-Waste'], estimatedWeight: '~7 kg', status: 'Assigned', assignedTo: 'Deepak Verma' },
-  { id: 'PK-1011', customer: 'Manoj Tiwari', phone: '98XXXXXX20', address: 'Vaishali, Ghaziabad', date: '2025-01-20', timeSlot: '4:00 PM - 6:00 PM', scrapTypes: ['Iron'], estimatedWeight: '~18 kg', status: 'Pending', assignedTo: null },
-  { id: 'PK-1012', customer: 'Anita Desai', phone: '98XXXXXX21', address: 'Powai, Mumbai', date: '2025-01-19', timeSlot: '10:00 AM - 12:00 PM', scrapTypes: ['Plastic', 'Cardboard'], estimatedWeight: '~9 kg', status: 'Completed', assignedTo: 'Ravi Kumar' },
-];
-
-const scrapBoys = [
-  { id: 1, name: 'Ravi Kumar', area: 'Noida', activePickups: 2 },
-  { id: 2, name: 'Deepak Verma', area: 'Gurgaon', activePickups: 1 },
-  { id: 3, name: 'Suresh Yadav', area: 'Delhi', activePickups: 0 },
-  { id: 4, name: 'Arun Patel', area: 'Hyderabad', activePickups: 3 },
-];
-
 const statusStyle = {
-  Pending: 'bg-amber-50 text-amber-700',
-  Assigned: 'bg-blue-50 text-blue-700',
-  Completed: 'bg-emerald-50 text-emerald-700',
-  Cancelled: 'bg-red-50 text-red-700',
+  UNASSIGNED: 'bg-amber-50 text-amber-700',
+  ASSIGNED: 'bg-blue-50 text-blue-700',
+  COMPLETED: 'bg-emerald-50 text-emerald-700',
+  CANCELLED: 'bg-red-50 text-red-700',
+};
+
+const statusLabel = {
+  UNASSIGNED: 'Unassigned',
+  ASSIGNED: 'Assigned',
+  COMPLETED: 'Completed',
+  CANCELLED: 'Cancelled',
 };
 
 const AdminPickupBookingsPage = () => {
-  const [bookings, setBookings] = useState(initialBookings);
+  const [bookings, setBookings] = useState([]);
+  const [scrapBoys, setScrapBoys] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('All');
   const [search, setSearch] = useState('');
-  const [view, setView] = useState('card'); // 'card' | 'table'
+  const [view, setView] = useState('card');
   const [page, setPage] = useState(1);
   const [assigningId, setAssigningId] = useState(null);
   const [confirmData, setConfirmData] = useState(null);
+  const [assigning, setAssigning] = useState(false);
+
+  const fetchData = () => {
+    setLoading(true);
+    Promise.all([
+      apiClient.get(API_ENDPOINTS.PICKUP_REQUESTS.BASE),
+      apiClient.get(API_ENDPOINTS.ADMIN.SCRAP_COLLECTORS),
+    ])
+      .then(([pickupRes, scrapRes]) => {
+        setBookings(pickupRes.data || []);
+        setScrapBoys(scrapRes.data || []);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => { fetchData(); }, []);
 
   const filtered = bookings.filter((b) => {
     const matchStatus = statusFilter === 'All' || b.status === statusFilter;
-    const matchSearch = b.customer.toLowerCase().includes(search.toLowerCase()) ||
-      b.id.toLowerCase().includes(search.toLowerCase()) ||
-      b.address.toLowerCase().includes(search.toLowerCase());
+    const q = search.toLowerCase();
+    const matchSearch = !q ||
+      (b.user_name || '').toLowerCase().includes(q) ||
+      String(b.id).includes(q) ||
+      (b.address || '').toLowerCase().includes(q) ||
+      (b.garbage_type || '').toLowerCase().includes(q);
     return matchStatus && matchSearch;
   });
 
   const totalPages = Math.ceil(filtered.length / PER_PAGE);
   const paginated = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
-  const requestAssign = (bookingId, scrapBoyName, isReassign = false) => {
-    setConfirmData({ bookingId, scrapBoyName, isReassign });
+  const requestAssign = (bookingId, scrapBoyId, scrapBoyName) => {
+    setConfirmData({ bookingId, scrapBoyId, scrapBoyName });
   };
 
-  const confirmAssign = () => {
+  const confirmAssign = async () => {
     if (!confirmData) return;
-    setBookings((prev) =>
-      prev.map((b) =>
-        b.id === confirmData.bookingId
-          ? { ...b, assignedTo: confirmData.scrapBoyName, status: 'Assigned' }
-          : b
-      )
-    );
+    setAssigning(true);
+    try {
+      await apiClient.post(API_ENDPOINTS.PICKUP_ASSIGNMENTS.BASE, {
+        pickup_request_id: confirmData.bookingId,
+        scrap_collector_id: confirmData.scrapBoyId,
+      });
+      fetchData();
+    } catch {}
+    setAssigning(false);
     setConfirmData(null);
     setAssigningId(null);
   };
 
-  // Reset page when filter/search changes
   const handleFilterChange = (s) => { setStatusFilter(s); setPage(1); };
   const handleSearchChange = (e) => { setSearch(e.target.value); setPage(1); };
 
-  const pendingCount = bookings.filter((b) => b.status === 'Pending').length;
+  const unassignedCount = bookings.filter((b) => b.status === 'UNASSIGNED').length;
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-6 w-6 animate-spin text-emerald-600" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-5">
@@ -88,12 +105,12 @@ const AdminPickupBookingsPage = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Pickup Bookings</h1>
-          <p className="text-sm text-gray-500 mt-1">Manage user pickup requests and assign scrap boys</p>
+          <p className="text-sm text-gray-500 mt-1">Manage pickup requests and assign scrap boys</p>
         </div>
-        {pendingCount > 0 && (
+        {unassignedCount > 0 && (
           <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg">
             <AlertCircle className="h-4 w-4 text-amber-600" />
-            <span className="text-sm font-medium text-amber-700">{pendingCount} pending assignment{pendingCount > 1 ? 's' : ''}</span>
+            <span className="text-sm font-medium text-amber-700">{unassignedCount} needs assignment</span>
           </div>
         )}
       </div>
@@ -104,7 +121,7 @@ const AdminPickupBookingsPage = () => {
           <Search className="h-4 w-4 text-gray-400 shrink-0" />
           <input
             type="text"
-            placeholder="Search by name, ID, or address..."
+            placeholder="Search by name, ID, address, type..."
             value={search}
             onChange={handleSearchChange}
             className="ml-2 bg-transparent text-sm text-gray-700 placeholder-gray-400 outline-none w-full"
@@ -122,11 +139,11 @@ const AdminPickupBookingsPage = () => {
                   : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
               }`}
             >
-              {s}
+              {s === 'All' ? 'All' : statusLabel[s]}
+              {s === 'UNASSIGNED' && unassignedCount > 0 ? ` (${unassignedCount})` : ''}
             </button>
           ))}
         </div>
-        {/* View Toggle */}
         <div className="flex items-center bg-white border border-gray-200 rounded-lg p-0.5">
           <button
             onClick={() => setView('card')}
@@ -163,59 +180,41 @@ const AdminPickupBookingsPage = () => {
                   <th className="px-4 py-3">Customer</th>
                   <th className="px-4 py-3">Address</th>
                   <th className="px-4 py-3">Date</th>
-                  <th className="px-4 py-3">Time Slot</th>
-                  <th className="px-4 py-3">Scrap Types</th>
-                  <th className="px-4 py-3">Assigned To</th>
+                  <th className="px-4 py-3">Slot</th>
+                  <th className="px-4 py-3">Type</th>
+                  <th className="px-4 py-3">Weight</th>
+                  <th className="px-4 py-3">Amount</th>
                   <th className="px-4 py-3">Status</th>
                   <th className="px-4 py-3"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {paginated.map((b) => (
-                  <tr key={b.id} className={`hover:bg-gray-50/50 transition-colors ${b.status === 'Pending' ? 'bg-amber-50/30' : ''}`}>
-                    <td className="px-4 py-3 font-medium text-gray-900 whitespace-nowrap">{b.id}</td>
-                    <td className="px-4 py-3">
-                      <p className="text-gray-900">{b.customer}</p>
-                      <p className="text-xs text-gray-400">{b.phone}</p>
-                    </td>
+                  <tr key={b.id} className={`hover:bg-gray-50/50 transition-colors ${b.status === 'UNASSIGNED' ? 'bg-amber-50/30' : ''}`}>
+                    <td className="px-4 py-3 font-medium text-gray-900 whitespace-nowrap">#{b.id}</td>
+                    <td className="px-4 py-3 text-gray-700">{b.user_name}</td>
                     <td className="px-4 py-3 text-gray-500 max-w-[180px] truncate">{b.address}</td>
-                    <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{b.date}</td>
+                    <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{b.request_date ? new Date(b.request_date).toLocaleDateString() : '—'}</td>
                     <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
-                      <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" />{b.timeSlot}</span>
+                      <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" />{b.slot_time}</span>
                     </td>
                     <td className="px-4 py-3">
-                      <div className="flex gap-1 flex-wrap">
-                        {b.scrapTypes.map((t) => (
-                          <span key={t} className="px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-xs">{t}</span>
-                        ))}
-                      </div>
+                      <span className="px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-xs">{b.garbage_type}</span>
                     </td>
+                    <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{b.estimated_weight} {b.unit_name}</td>
+                    <td className="px-4 py-3 font-medium text-gray-900 whitespace-nowrap">₹{b.total_amount}</td>
                     <td className="px-4 py-3">
-                      {b.assignedTo
-                        ? <span className="text-gray-700">{b.assignedTo}</span>
-                        : <span className="text-amber-600 text-xs font-medium">Unassigned</span>
-                      }
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap ${statusStyle[b.status]}`}>
-                        {b.status}
+                      <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap ${statusStyle[b.status] || 'bg-gray-50 text-gray-700'}`}>
+                        {statusLabel[b.status] || b.status}
                       </span>
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">
-                      {b.status === 'Pending' && (
+                      {b.status === 'UNASSIGNED' && (
                         <button
                           onClick={() => setAssigningId(assigningId === b.id ? null : b.id)}
                           className="px-2.5 py-1 bg-emerald-600 text-white rounded-lg text-xs font-medium hover:bg-emerald-700 transition-colors"
                         >
                           Assign
-                        </button>
-                      )}
-                      {b.status === 'Assigned' && (
-                        <button
-                          onClick={() => setAssigningId(assigningId === b.id ? null : b.id)}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 border border-gray-200 text-gray-600 rounded-lg text-xs font-medium hover:bg-gray-50 transition-colors"
-                        >
-                          <RefreshCw className="h-3 w-3" /> Reassign
                         </button>
                       )}
                     </td>
@@ -229,20 +228,16 @@ const AdminPickupBookingsPage = () => {
           {assigningId && paginated.find((b) => b.id === assigningId) && (
             <div className="border-t border-gray-200 px-4 py-3 bg-gray-50">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs font-medium text-gray-500">
-                  {bookings.find((b) => b.id === assigningId)?.status === 'Assigned' ? 'Reassign' : 'Assign'} {assigningId} to:
-                </span>
-                {scrapBoys
-                  .filter((sb) => sb.name !== bookings.find((b) => b.id === assigningId)?.assignedTo)
-                  .map((sb) => (
-                    <button
-                      key={sb.id}
-                      onClick={() => requestAssign(assigningId, sb.name, bookings.find((b) => b.id === assigningId)?.status === 'Assigned')}
-                      className="px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-medium text-gray-700 hover:border-emerald-400 hover:bg-emerald-50 transition-colors"
-                    >
-                      {sb.name} <span className="text-gray-400">· {sb.area} · {sb.activePickups} active</span>
-                    </button>
-                  ))}
+                <span className="text-xs font-medium text-gray-500">Assign #{assigningId} to:</span>
+                {scrapBoys.map((sb) => (
+                  <button
+                    key={sb.id}
+                    onClick={() => requestAssign(assigningId, sb.id, sb.name)}
+                    className="px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-medium text-gray-700 hover:border-emerald-400 hover:bg-emerald-50 transition-colors"
+                  >
+                    {sb.name} <span className="text-gray-400">· {sb.phone}</span>
+                  </button>
+                ))}
                 <button onClick={() => setAssigningId(null)} className="text-xs text-gray-400 hover:text-gray-600 ml-1">Cancel</button>
               </div>
             </div>
@@ -254,19 +249,19 @@ const AdminPickupBookingsPage = () => {
       {filtered.length > 0 && view === 'card' && (
         <div className="space-y-3">
           {paginated.map((booking) => (
-            <div key={booking.id} className="bg-white rounded-xl border border-gray-200 p-4 sm:p-5 hover:shadow-sm transition-shadow">
+            <div key={booking.id} className={`bg-white rounded-xl border p-4 sm:p-5 hover:shadow-sm transition-shadow ${booking.status === 'UNASSIGNED' ? 'border-amber-200' : 'border-gray-200'}`}>
               <div className="flex flex-col lg:flex-row lg:items-start gap-4">
                 <div className="flex-1 min-w-0 space-y-3">
                   <div className="flex items-center gap-3 flex-wrap">
-                    <span className="text-sm font-bold text-gray-900">{booking.id}</span>
-                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${statusStyle[booking.status]}`}>
-                      {booking.status}
+                    <span className="text-sm font-bold text-gray-900">#{booking.id}</span>
+                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${statusStyle[booking.status] || 'bg-gray-50 text-gray-700'}`}>
+                      {statusLabel[booking.status] || booking.status}
                     </span>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
                     <div className="flex items-center gap-2 text-gray-600">
                       <User className="h-4 w-4 text-gray-400 shrink-0" />
-                      <span className="truncate">{booking.customer} · {booking.phone}</span>
+                      <span className="truncate">{booking.user_name}</span>
                     </div>
                     <div className="flex items-center gap-2 text-gray-600">
                       <MapPin className="h-4 w-4 text-gray-400 shrink-0" />
@@ -274,36 +269,35 @@ const AdminPickupBookingsPage = () => {
                     </div>
                     <div className="flex items-center gap-2 text-gray-600">
                       <Calendar className="h-4 w-4 text-gray-400 shrink-0" />
-                      <span>{booking.date}</span>
+                      <span>{booking.request_date ? new Date(booking.request_date).toLocaleDateString() : '—'}</span>
                     </div>
                     <div className="flex items-center gap-2 text-gray-600">
                       <Clock className="h-4 w-4 text-gray-400 shrink-0" />
-                      <span>{booking.timeSlot}</span>
+                      <span>{booking.slot_time}</span>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 flex-wrap">
-                    {booking.scrapTypes.map((t) => (
-                      <span key={t} className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs">{t}</span>
-                    ))}
-                    <span className="text-xs text-gray-400">· {booking.estimatedWeight}</span>
+                    <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs">{booking.garbage_type}</span>
+                    <span className="text-xs text-gray-400">· {booking.estimated_weight} {booking.unit_name}</span>
+                    <span className="text-xs font-medium text-gray-700">· ₹{booking.total_amount}</span>
                   </div>
                 </div>
 
                 {/* Assignment Section */}
                 <div className="lg:w-64 shrink-0">
-                  {booking.status === 'Pending' ? (
+                  {booking.status === 'UNASSIGNED' ? (
                     assigningId === booking.id ? (
                       <div className="space-y-2">
                         <p className="text-xs font-medium text-gray-500 mb-1">Select Scrap Boy</p>
                         {scrapBoys.map((sb) => (
                           <button
                             key={sb.id}
-                            onClick={() => requestAssign(booking.id, sb.name)}
+                            onClick={() => requestAssign(booking.id, sb.id, sb.name)}
                             className="w-full flex items-center justify-between p-2.5 rounded-lg border border-gray-200 hover:border-emerald-400 hover:bg-emerald-50 transition-colors text-left"
                           >
                             <div>
                               <p className="text-sm font-medium text-gray-900">{sb.name}</p>
-                              <p className="text-xs text-gray-500">{sb.area} · {sb.activePickups} active</p>
+                              <p className="text-xs text-gray-500">{sb.phone}</p>
                             </div>
                             <Truck className="h-4 w-4 text-gray-400" />
                           </button>
@@ -318,51 +312,18 @@ const AdminPickupBookingsPage = () => {
                         <Truck className="h-4 w-4" /> Assign Scrap Boy
                       </button>
                     )
-                  ) : booking.status === 'Assigned' ? (
-                    assigningId === booking.id ? (
-                      <div className="space-y-2">
-                        <p className="text-xs font-medium text-gray-500 mb-1">Reassign to</p>
-                        {scrapBoys
-                          .filter((sb) => sb.name !== booking.assignedTo)
-                          .map((sb) => (
-                            <button
-                              key={sb.id}
-                              onClick={() => requestAssign(booking.id, sb.name, true)}
-                              className="w-full flex items-center justify-between p-2.5 rounded-lg border border-gray-200 hover:border-blue-400 hover:bg-blue-50 transition-colors text-left"
-                            >
-                              <div>
-                                <p className="text-sm font-medium text-gray-900">{sb.name}</p>
-                                <p className="text-xs text-gray-500">{sb.area} · {sb.activePickups} active</p>
-                              </div>
-                              <Truck className="h-4 w-4 text-gray-400" />
-                            </button>
-                          ))}
-                        <button onClick={() => setAssigningId(null)} className="w-full text-xs text-gray-500 hover:text-gray-700 py-1">Cancel</button>
+                  ) : booking.status === 'ASSIGNED' ? (
+                    <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg">
+                      <Truck className="h-4 w-4 text-blue-600 shrink-0" />
+                      <div>
+                        <p className="text-xs text-blue-600">Assigned</p>
+                        <p className="text-sm font-medium text-blue-800">Scrap Boy Assigned</p>
                       </div>
-                    ) : (
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg">
-                          <Truck className="h-4 w-4 text-blue-600 shrink-0" />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs text-blue-600">Assigned to</p>
-                            <p className="text-sm font-medium text-blue-800">{booking.assignedTo}</p>
-                          </div>
-                        </div>
-                        <button
-                          onClick={() => setAssigningId(booking.id)}
-                          className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-gray-200 text-gray-700 rounded-lg text-xs font-medium hover:bg-gray-50 transition-colors"
-                        >
-                          <RefreshCw className="h-3.5 w-3.5" /> Reassign
-                        </button>
-                      </div>
-                    )
-                  ) : booking.status === 'Completed' ? (
+                    </div>
+                  ) : booking.status === 'COMPLETED' ? (
                     <div className="flex items-center gap-2 p-3 bg-emerald-50 rounded-lg">
                       <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
-                      <div>
-                        <p className="text-xs text-emerald-600">Completed by</p>
-                        <p className="text-sm font-medium text-emerald-800">{booking.assignedTo}</p>
-                      </div>
+                      <p className="text-sm font-medium text-emerald-800">Completed</p>
                     </div>
                   ) : null}
                 </div>
@@ -411,12 +372,9 @@ const AdminPickupBookingsPage = () => {
       {/* Confirm Assignment Modal */}
       <ConfirmModal
         open={!!confirmData}
-        title={confirmData?.isReassign ? 'Reassign Pickup' : 'Assign Pickup'}
-        message={confirmData?.isReassign
-          ? `Are you sure you want to reassign ${confirmData?.bookingId} to ${confirmData?.scrapBoyName}?`
-          : `Assign ${confirmData?.scrapBoyName} to pickup ${confirmData?.bookingId}?`
-        }
-        confirmText={confirmData?.isReassign ? 'Reassign' : 'Assign'}
+        title="Assign Pickup"
+        message={`Assign ${confirmData?.scrapBoyName} to pickup #${confirmData?.bookingId}?`}
+        confirmText={assigning ? 'Assigning...' : 'Assign'}
         variant="info"
         onConfirm={confirmAssign}
         onCancel={() => setConfirmData(null)}

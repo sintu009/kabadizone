@@ -71,5 +71,12 @@ export default defineConfig({
   ],
   server: {
     host: true,
+    proxy: {
+      '/api': {
+        target: 'http://10.10.10.9:5000',
+        changeOrigin: true,
+        secure: false,
+      },
+    },
   },
 });

@@ -1,51 +1,175 @@
-import { ArrowRight, PackageOpen, Recycle, DollarSign, Clock, ShieldCheck, Leaf, Truck, Phone, MapPin, CalendarDays, Package, ChevronLeft } from 'lucide-react';
+import { ArrowRight, PackageOpen, Recycle, DollarSign, Clock, ShieldCheck, Leaf, Truck, Phone, MapPin, CalendarDays, Package, ChevronLeft, Search, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
+import L from 'leaflet';
+import apiClient from '../../../api/axios';
+import { API_ENDPOINTS } from '../../../api/endpoints';
+import toast from 'react-hot-toast';
 
-const SCRAP_TYPES = [
-  { label: 'Newspaper', icon: '📰' },
-  { label: 'Cardboard', icon: '📦' },
-  { label: 'Iron & Steel', icon: '🔩' },
-  { label: 'Plastics', icon: '🥤' },
-  { label: 'E-Waste', icon: '💻' },
-  { label: 'Aluminum', icon: '🥫' },
-];
+
+
+// Fix default leaflet marker icon
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+});
+
+const MapUpdater = ({ center }) => {
+  const map = useMap();
+  useEffect(() => {
+    if (center) map.flyTo(center, 16);
+  }, [center, map]);
+  return null;
+};
 
 const BookPickupForm = () => {
   const { t } = useTranslation();
   const [step, setStep] = useState(1);
-  const [form, setForm] = useState({ name: '', phone: '', address: '', city: '', date: '', time: '', scrapTypes: [] });
+  const [form, setForm] = useState({ name: '', phone: '', address: '', date: '', slot_id: '', scrapTypes: [], latitude: 0, longitude: 0 });
+  const [garbagePrices, setGarbagePrices] = useState([]);
+  const [slots, setSlots] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [searching, setSearching] = useState(false);
+  const [mapCenter, setMapCenter] = useState([26.12, 85.39]);
+  const [submitting, setSubmitting] = useState(false);
+  const [errors, setErrors] = useState({});
+  const debounceRef = useRef(null);
 
-  const next = () => setStep((s) => Math.min(s + 1, 4));
-  const prev = () => setStep((s) => Math.max(s - 1, 1));
-  const update = (field, value) => setForm((f) => ({ ...f, [field]: value }));
-  const toggleScrap = (label) =>
+  useEffect(() => {
+    apiClient.get(API_ENDPOINTS.SLOT_TIMES.BASE).then((res) => {
+      setSlots(Array.isArray(res) ? res : res.data || []);
+    }).catch(() => { });
+    apiClient.get(API_ENDPOINTS.GARBAGE.PRICES).then((res) => {
+      setGarbagePrices(Array.isArray(res) ? res : res.data || []);
+    }).catch(() => { });
+  }, []);
+
+  const searchLocation = useCallback((query) => {
+    if (!query || query.length < 3) { setSearchResults([]); return; }
+    setSearching(true);
+    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`)
+      .then((r) => r.json())
+      .then((data) => setSearchResults(data))
+      .catch(() => setSearchResults([]))
+      .finally(() => setSearching(false));
+  }, []);
+
+  const handleSearchInput = (val) => {
+    setSearchQuery(val);
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => searchLocation(val), 400);
+  };
+
+  const selectLocation = (place) => {
+    const lat = parseFloat(place.lat);
+    const lon = parseFloat(place.lon);
+    setForm((f) => ({ ...f, address: place.display_name, latitude: lat, longitude: lon }));
+    setMapCenter([lat, lon]);
+    setSearchQuery(place.display_name);
+    setSearchResults([]);
+    setErrors((e) => ({ ...e, address: undefined }));
+  };
+
+  const isStepValid = (s) => {
+    if (s === 1) return form.name.trim() && /^\d{10}$/.test(form.phone.trim());
+    if (s === 2) return !!form.address;
+    if (s === 3) return !!form.date && !!form.slot_id;
+    if (s === 4) return form.scrapTypes.length > 0;
+    return false;
+  };
+
+  const validate = (s) => {
+    const e = {};
+    if (s === 1) {
+      if (!form.name.trim()) e.name = t('bookPickup.required');
+      if (!form.phone.trim()) e.phone = t('bookPickup.required');
+      else if (!/^\d{10}$/.test(form.phone.trim())) e.phone = t('bookPickup.invalidPhone');
+    } else if (s === 2) {
+      if (!form.address) e.address = t('bookPickup.required');
+    } else if (s === 3) {
+      if (!form.date) e.date = t('bookPickup.required');
+      if (!form.slot_id) e.slot_id = t('bookPickup.required');
+    } else if (s === 4) {
+      if (form.scrapTypes.length === 0) e.scrapTypes = t('bookPickup.required');
+    }
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
+  const next = () => { if (validate(step)) setStep((s) => Math.min(s + 1, 4)); };
+  const canContinue = isStepValid(step);
+  const canSubmit = isStepValid(4);
+  const prev = () => { setErrors({}); setStep((s) => Math.max(s - 1, 1)); };
+  const update = (field, value) => {
+    setForm((f) => ({ ...f, [field]: value }));
+    setErrors((e) => ({ ...e, [field]: undefined }));
+  };
+  const toggleScrap = (id) => {
     setForm((f) => ({
       ...f,
-      scrapTypes: f.scrapTypes.includes(label)
-        ? f.scrapTypes.filter((t) => t !== label)
-        : [...f.scrapTypes, label],
+      scrapTypes: f.scrapTypes.includes(id)
+        ? f.scrapTypes.filter((t) => t !== id)
+        : [...f.scrapTypes, id],
     }));
+    setErrors((e) => ({ ...e, scrapTypes: undefined }));
+  };
+
+  const handleSubmit = async () => {
+    if (!validate(4)) return;
+    setSubmitting(true);
+    try {
+      const selectedPrice = garbagePrices.find((g) => g.id === form.scrapTypes[0]);
+      await apiClient.post(API_ENDPOINTS.PICKUP_REQUESTS.GUEST, {
+        name: form.name,
+        phone: form.phone,
+        garbage_type_id: selectedPrice?.garbage_type_id || 1,
+        estimated_weight: 5,
+        garbage_price_id: selectedPrice?.id || 1,
+        price_at_request: parseFloat(selectedPrice?.price_per_unit) || 0,
+        total_amount: (parseFloat(selectedPrice?.price_per_unit) || 0) * 5,
+        address: form.address,
+        latitude: form.latitude,
+        longitude: form.longitude,
+        image: '',
+        slot_id: Number(form.slot_id) || 1,
+        request_date: form.date,
+      });
+      toast.success(t('bookPickup.successMessage'));
+      setForm({ name: '', phone: '', address: '', date: '', slot_id: '', scrapTypes: [], latitude: 0, longitude: 0 });
+      setSearchQuery('');
+      setStep(1);
+    } catch {
+      toast.error(t('bookPickup.errorMessage'));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const steps = [
+    { id: 1, label: t('bookPickup.contact'), icon: Phone },
+    { id: 2, label: t('bookPickup.address'), icon: MapPin },
+    { id: 3, label: t('bookPickup.schedule'), icon: CalendarDays },
+    { id: 4, label: t('bookPickup.type'), icon: Package },
+  ];
 
   return (
-    <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6 sm:p-8">
+    <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-5 sm:p-8">
       {/* Stepper */}
-      <div className="flex items-center justify-between mb-10">
-        {[
-          { id: 1, label: t('bookPickup.contact'), icon: Phone },
-          { id: 2, label: t('bookPickup.address'), icon: MapPin },
-          { id: 3, label: t('bookPickup.schedule'), icon: CalendarDays },
-          { id: 4, label: t('bookPickup.type'), icon: Package },
-        ].map((s, idx) => {
+      <div className="flex items-center mb-8 sm:mb-10">
+        {steps.map((s, idx) => {
           const Icon = s.icon;
           const isActive = step === s.id;
           const isDone = step > s.id;
           return (
-            <div key={s.id} className="flex-1 flex items-center">
-              <div className="flex flex-col items-center flex-1">
+            <div key={s.id} className="flex items-center flex-1 last:flex-none">
+              <div className="flex flex-col items-center">
                 <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-colors ${isActive
+                  className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-colors shrink-0 ${isActive
                     ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
                     : isDone
                       ? 'bg-emerald-100 text-emerald-700'
@@ -54,11 +178,11 @@ const BookPickupForm = () => {
                 >
                   <Icon className="h-4 w-4" />
                 </div>
-                <span className={`mt-2 text-xs font-medium ${isActive ? 'text-emerald-600' : isDone ? 'text-emerald-600' : 'text-gray-400'
+                <span className={`mt-1.5 text-[10px] sm:text-xs font-medium whitespace-nowrap ${isActive || isDone ? 'text-emerald-600' : 'text-gray-400'
                   }`}>{s.label}</span>
               </div>
               {idx < 3 && (
-                <div className={`h-0.5 w-full mx-1 rounded-full -mt-5 ${step > s.id ? 'bg-emerald-400' : 'bg-gray-100'
+                <div className={`h-0.5 flex-1 mx-2 sm:mx-3 rounded-full -mt-5 ${step > s.id ? 'bg-emerald-400' : 'bg-gray-200'
                   }`} />
               )}
             </div>
@@ -67,118 +191,133 @@ const BookPickupForm = () => {
       </div>
 
       {/* Step Content */}
-      <div className="min-h-[200px]">
+      <div className="min-h-[180px]">
         {step === 1 && (
-          <div className="space-y-4">
+          <div className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('bookPickup.fullName')}</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">{t('bookPickup.fullName')}</label>
               <input
                 type="text"
                 value={form.name}
                 onChange={(e) => update('name', e.target.value)}
                 placeholder={t('bookPickup.namePlaceholder')}
-                className="w-full px-4 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors"
+                className={`w-full px-4 py-3 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors ${errors.name ? 'border-red-400' : 'border-gray-200'}`}
               />
+              {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name}</p>}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('bookPickup.phone')}</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">{t('bookPickup.phone')}</label>
               <input
                 type="tel"
                 value={form.phone}
                 onChange={(e) => update('phone', e.target.value)}
                 placeholder={t('bookPickup.phonePlaceholder')}
-                className="w-full px-4 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors"
+                className={`w-full px-4 py-3 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors ${errors.phone ? 'border-red-400' : 'border-gray-200'}`}
               />
+              {errors.phone && <p className="text-xs text-red-500 mt-1">{errors.phone}</p>}
             </div>
           </div>
         )}
 
         {step === 2 && (
           <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('bookPickup.address')}</label>
-              <textarea
-                value={form.address}
-                onChange={(e) => update('address', e.target.value)}
-                placeholder={t('bookPickup.addressPlaceholder')}
-                rows={3}
-                className="w-full px-4 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors resize-none"
-              />
+            <div className="relative">
+              <label className="block text-sm font-medium text-gray-700 mb-2">{t('bookPickup.address')}</label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => handleSearchInput(e.target.value)}
+                  placeholder={t('bookPickup.addressPlaceholder')}
+                  className={`w-full pl-10 pr-4 py-3 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors ${errors.address ? 'border-red-400' : 'border-gray-200'}`}
+                />
+              </div>
+              {errors.address && <p className="text-xs text-red-500 mt-1">{errors.address}</p>}
+              {searching && <p className="text-xs text-gray-400 mt-1">{t('bookPickup.searching')}</p>}
+              {searchResults.length > 0 && (
+                <ul className="absolute z-50 w-full bg-white border border-gray-200 rounded-xl mt-1 max-h-48 overflow-y-auto shadow-lg">
+                  {searchResults.map((r) => (
+                    <li key={r.place_id} onClick={() => selectLocation(r)} className="px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 cursor-pointer border-b border-gray-50 last:border-0">
+                      {r.display_name}
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('bookPickup.city')}</label>
-              <input
-                type="text"
-                value={form.city}
-                onChange={(e) => update('city', e.target.value)}
-                placeholder={t('bookPickup.cityPlaceholder')}
-                className="w-full px-4 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors"
-              />
+            <div className="rounded-xl overflow-hidden border border-gray-200 h-52">
+              <MapContainer center={mapCenter} zoom={13} scrollWheelZoom={false} className="h-full w-full" style={{ zIndex: 1 }}>
+                <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution='&copy; OpenStreetMap' />
+                <MapUpdater center={mapCenter} />
+                {form.latitude !== 0 && <Marker position={[form.latitude, form.longitude]} />}
+              </MapContainer>
             </div>
           </div>
         )}
 
         {step === 3 && (
-          <div className="space-y-4">
+          <div className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('bookPickup.date')}</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">{t('bookPickup.date')}</label>
               <input
                 type="date"
                 value={form.date}
                 onChange={(e) => update('date', e.target.value)}
-                className="w-full px-4 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors"
+                className={`w-full px-4 py-3 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors ${errors.date ? 'border-red-400' : 'border-gray-200'}`}
               />
+              {errors.date && <p className="text-xs text-red-500 mt-1">{errors.date}</p>}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('bookPickup.time')}</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">{t('bookPickup.time')}</label>
               <select
-                value={form.time}
-                onChange={(e) => update('time', e.target.value)}
-                className="w-full px-4 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors bg-white"
+                value={form.slot_id}
+                onChange={(e) => update('slot_id', e.target.value)}
+                className={`w-full px-4 py-3 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors bg-white ${errors.slot_id ? 'border-red-400' : 'border-gray-200'}`}
               >
                 <option value="">{t('bookPickup.selectTime')}</option>
-                <option value="9-12">9:00 AM – 12:00 PM</option>
-                <option value="12-3">12:00 PM – 3:00 PM</option>
-                <option value="3-6">3:00 PM – 6:00 PM</option>
+                {slots.map((slot) => (
+                  <option key={slot.id} value={slot.id}>
+                    {slot.start_time?.slice(0, 5)} – {slot.end_time?.slice(0, 5)}
+                  </option>
+                ))}
               </select>
+              {errors.slot_id && <p className="text-xs text-red-500 mt-1">{errors.slot_id}</p>}
             </div>
           </div>
         )}
 
         {step === 4 && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">{t('bookPickup.scrapTypes')}</label>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {SCRAP_TYPES.map((scrap) => {
-                const selected = form.scrapTypes.includes(scrap.label);
-                return (
-                  <button
-                    key={scrap.label}
-                    type="button"
-                    onClick={() => toggleScrap(scrap.label)}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-lg border text-sm font-medium transition-colors ${selected
-                      ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-                      : 'border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'
-                      }`}
-                  >
-                    <span className="text-lg">{scrap.icon}</span>
-                    {scrap.label}
-                  </button>
-                );
-              })}
-            </div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">{t('bookPickup.scrapTypes')}</label>
+            <select
+              value={form.scrapTypes[0] || ''}
+              onChange={(e) => {
+                const val = Number(e.target.value);
+                setForm((f) => ({ ...f, scrapTypes: val ? [val] : [] }));
+                setErrors((er) => ({ ...er, scrapTypes: undefined }));
+              }}
+              className={`w-full px-4 py-3 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors bg-white ${errors.scrapTypes ? 'border-red-400' : 'border-gray-200'}`}
+            >
+              <option value="">Select scrap type</option>
+              {garbagePrices.filter((g) => g.is_active).map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.garbage_name} — ₹{item.price_per_unit}/{item.unit_name}
+                </option>
+              ))}
+            </select>
+            {errors.scrapTypes && <p className="text-xs text-red-500 mt-1">{errors.scrapTypes}</p>}
           </div>
         )}
       </div>
 
       {/* Navigation */}
-      <div className="flex items-center justify-between mt-8 pt-6 border-t border-gray-100">
+      <div className="flex items-center justify-between mt-8 pt-5 border-t border-gray-100">
         <button
           onClick={prev}
           disabled={step === 1}
-          className={`inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${step === 1
+          className={`inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium rounded-xl transition-colors ${step === 1
             ? 'text-gray-300 cursor-not-allowed'
-            : 'text-gray-600 hover:bg-gray-50'
+            : 'text-gray-600 hover:bg-gray-50 active:bg-gray-100'
             }`}
         >
           <ChevronLeft className="h-4 w-4" /> {t('bookPickup.back')}
@@ -187,15 +326,18 @@ const BookPickupForm = () => {
         {step < 4 ? (
           <button
             onClick={next}
-            className="inline-flex items-center gap-1.5 px-6 py-2.5 text-sm font-semibold text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition-colors shadow-sm"
+            disabled={!canContinue}
+            className={`inline-flex items-center gap-1.5 px-6 sm:px-8 py-3 text-sm font-semibold rounded-xl transition-colors shadow-sm ${canContinue ? 'text-white bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800' : 'text-white bg-emerald-600/40 cursor-not-allowed'}`}
           >
             {t('bookPickup.continue')} <ArrowRight className="h-4 w-4" />
           </button>
         ) : (
           <button
-            className="inline-flex items-center gap-1.5 px-6 py-2.5 text-sm font-semibold text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition-colors shadow-sm"
+            onClick={handleSubmit}
+            disabled={submitting || !canSubmit}
+            className={`inline-flex items-center gap-1.5 px-6 sm:px-8 py-3 text-sm font-semibold rounded-xl transition-colors shadow-sm ${canSubmit && !submitting ? 'text-white bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800' : 'text-white bg-emerald-600/40 cursor-not-allowed'}`}
           >
-            {t('bookPickup.submit')} <ArrowRight className="h-4 w-4" />
+            {submitting ? <><Loader2 className="h-4 w-4 animate-spin" /> {t('bookPickup.submitting')}</> : <>{t('bookPickup.submit')} <ArrowRight className="h-4 w-4" /></>}
           </button>
         )}
       </div>
@@ -258,11 +400,11 @@ const HomePage = () => {
         </section>
 
         {/* Book Your Pickup */}
-        <section className="py-20 px-4 sm:px-6 lg:px-8" id="book-pickup">
-          <div className="max-w-3xl mx-auto">
-            <div className="text-center mb-12">
-              <h2 className="text-emerald-600 font-semibold tracking-widest uppercase text-sm mb-3">{t('bookPickup.subtitle')}</h2>
-              <h3 className="text-3xl md:text-4xl font-bold text-gray-900">{t('bookPickup.title')}</h3>
+        <section className="py-12 sm:py-20 px-4 sm:px-6 lg:px-8" id="book-pickup">
+          <div className="max-w-2xl mx-auto">
+            <div className="text-center mb-8 sm:mb-12">
+              <h2 className="text-emerald-600 font-semibold tracking-widest uppercase text-xs sm:text-sm mb-2">{t('bookPickup.subtitle')}</h2>
+              <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900">{t('bookPickup.title')}</h3>
             </div>
 
             <BookPickupForm />

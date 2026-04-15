@@ -1,10 +1,12 @@
 import { Link } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Users, Truck, TrendingUp, TrendingDown, IndianRupee,
   ArrowUpRight, Clock, CheckCircle2, AlertCircle, Package,
-  Calendar, MapPin, CalendarClock, Plus, X, Phone,
+  Calendar, MapPin, CalendarClock, Plus, X, Phone, Loader2,
 } from 'lucide-react';
+import apiClient from '../../../api/axios';
+import { API_ENDPOINTS } from '../../../api/endpoints';
 
 const SCRAP_TYPE_OPTIONS = [
   { label: 'Newspaper', icon: '📰' },
@@ -19,28 +21,11 @@ const TIME_SLOTS = ['10 AM - 12 PM', '12 PM - 2 PM', '2 PM - 4 PM', '4 PM - 6 PM
 
 const EMPTY_FORM = { name: '', phone: '', address: '', date: '', timeSlot: '', scrapTypes: [] };
 
-const initialStats = [
-  { label: 'Total Users', value: '1,245', change: '+12.5%', up: true, icon: Users, color: 'bg-indigo-50 text-indigo-600' },
-  { label: 'Active Scrapboys', value: '48', change: '+4.1%', up: true, icon: Truck, color: 'bg-emerald-50 text-emerald-600' },
-  { label: 'Pending Pickups', value: '5', change: '+2', up: false, icon: CalendarClock, color: 'bg-amber-50 text-amber-600', to: '/admin/bookings' },
-  { label: 'Revenue', value: '₹4,52,300', change: '+18.2%', up: true, icon: IndianRupee, color: 'bg-violet-50 text-violet-600' },
-];
-
-const initialPendingPickups = [
-  { id: 'PK-1001', customer: 'Rahul Sharma', phone: '98XXXXXX10', address: 'Sector 12, Noida', timeSlot: '10 AM - 12 PM', source: 'online' },
-  { id: 'PK-1002', customer: 'Priya Patel', phone: '98XXXXXX11', address: 'MG Road, Gurgaon', timeSlot: '2 PM - 4 PM', source: 'online' },
-  { id: 'PK-1003', customer: 'Amit Kumar', phone: '98XXXXXX12', address: 'Laxmi Nagar, Delhi', timeSlot: '10 AM - 12 PM', source: 'online' },
-];
-
-const initialRecentOrders = [
-  { id: '#ORD-2041', customer: 'Rahul Sharma', scrapBoy: 'Ravi Kumar', type: 'Paper & Cardboard', weight: '12.5 kg', amount: '₹312', status: 'Completed', timeSlot: '10 AM - 12 PM', source: 'online' },
-  { id: '#ORD-2040', customer: 'Priya Patel', scrapBoy: 'Suresh Yadav', type: 'Metal Scrap', weight: '8.2 kg', amount: '₹1,230', status: 'Assigned', timeSlot: '2 PM - 4 PM', source: 'online' },
-  { id: '#ORD-2039', customer: 'Amit Kumar', scrapBoy: null, type: 'Plastic', weight: '5.0 kg', amount: '₹75', status: 'Pending', timeSlot: '10 AM - 12 PM', source: 'online' },
-  { id: '#ORD-2038', customer: 'Sneha Reddy', scrapBoy: null, type: 'E-Waste', weight: '3.1 kg', amount: '₹620', status: 'Pending', timeSlot: '4 PM - 6 PM', source: 'online' },
-  { id: '#ORD-2037', customer: 'Vikram Singh', scrapBoy: 'Deepak Verma', type: 'Iron', weight: '22.0 kg', amount: '₹880', status: 'Completed', timeSlot: '10 AM - 12 PM', source: 'online' },
-];
 
 const statusStyle = {
+  COMPLETED: 'bg-emerald-50 text-emerald-700',
+  ASSIGNED: 'bg-blue-50 text-blue-700',
+  UNASSIGNED: 'bg-amber-50 text-amber-700',
   Completed: 'bg-emerald-50 text-emerald-700',
   Assigned: 'bg-blue-50 text-blue-700',
   Pending: 'bg-amber-50 text-amber-700',
@@ -151,45 +136,39 @@ const AddPickupModal = ({ open, onClose, onAdd }) => {
 };
 
 const AdminDashboardPage = () => {
-  const [recentOrders, setRecentOrders] = useState(initialRecentOrders);
-  const [pendingPickups, setPendingPickups] = useState(initialPendingPickups);
+  const [pickups, setPickups] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [addModalOpen, setAddModalOpen] = useState(false);
-  const [orderCounter, setOrderCounter] = useState(2042);
-  const [pickupCounter, setPickupCounter] = useState(1004);
 
-  const pendingCount = recentOrders.filter((o) => o.status === 'Pending').length;
-
-  const handleAddPickup = (form) => {
-    const newPickupId = `PK-${pickupCounter}`;
-    const newOrderId = `#ORD-${orderCounter}`;
-
-    setPendingPickups((prev) => [
-      { id: newPickupId, customer: form.name, phone: form.phone, address: form.address, timeSlot: form.timeSlot, source: 'manual' },
-      ...prev,
-    ]);
-
-    setRecentOrders((prev) => [
-      { id: newOrderId, customer: form.name, scrapBoy: null, type: form.scrapTypes.join(', '), weight: '—', amount: '—', status: 'Pending', timeSlot: form.timeSlot, source: 'manual' },
-      ...prev,
-    ]);
-
-    setPickupCounter((c) => c + 1);
-    setOrderCounter((c) => c + 1);
+  const fetchPickups = () => {
+    setLoading(true);
+    apiClient.get(API_ENDPOINTS.PICKUP_REQUESTS.BASE)
+      .then((res) => setPickups(res.data || []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
   };
 
+  useEffect(() => { fetchPickups(); }, []);
+
+  const unassignedPickups = pickups.filter((p) => p.status === 'UNASSIGNED');
+  const assignedPickups = pickups.filter((p) => p.status === 'ASSIGNED');
+  const completedPickups = pickups.filter((p) => p.status === 'COMPLETED');
+  const pendingCount = unassignedPickups.length;
+
+  const handleAddPickup = () => { fetchPickups(); };
+
   const stats = [
-    { label: 'Total Users', value: '1,245', change: '+12.5%', up: true, icon: Users, color: 'bg-indigo-50 text-indigo-600' },
-    { label: 'Active Scrapboys', value: '48', change: '+4.1%', up: true, icon: Truck, color: 'bg-emerald-50 text-emerald-600' },
-    { label: 'Pending Pickups', value: String(pendingCount), change: `+${pendingCount}`, up: false, icon: CalendarClock, color: 'bg-amber-50 text-amber-600', to: '/admin/bookings' },
-    { label: 'Revenue', value: '₹4,52,300', change: '+18.2%', up: true, icon: IndianRupee, color: 'bg-violet-50 text-violet-600' },
+    { label: 'Total Pickups', value: String(pickups.length), change: '', up: true, icon: Package, color: 'bg-indigo-50 text-indigo-600' },
+    { label: 'Completed', value: String(completedPickups.length), change: '', up: true, icon: CheckCircle2, color: 'bg-emerald-50 text-emerald-600' },
+    { label: 'Needs Assignment', value: String(pendingCount), change: pendingCount > 0 ? `${pendingCount} pending` : '', up: false, icon: CalendarClock, color: 'bg-amber-50 text-amber-600', to: '/admin/bookings' },
+    { label: 'Assigned', value: String(assignedPickups.length), change: '', up: true, icon: Truck, color: 'bg-blue-50 text-blue-600' },
   ];
 
   const todaySummary = {
-    newBookings: 14 + (recentOrders.length - initialRecentOrders.length),
-    completedPickups: recentOrders.filter((o) => o.status === 'Completed').length,
+    newBookings: pickups.length,
+    completedPickups: completedPickups.length,
     pendingPickups: pendingCount,
-    assignedPickups: recentOrders.filter((o) => o.status === 'Assigned').length,
-    todayRevenue: '₹12,450',
+    assignedPickups: assignedPickups.length,
   };
 
   return (
@@ -240,18 +219,17 @@ const AdminDashboardPage = () => {
         })}
       </div>
 
-      {/* Today's Summary + Top Scrap Boys */}
+      {/* Summary + Needs Assignment */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        {/* Today's Summary */}
+        {/* Summary */}
         <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <h2 className="text-base font-semibold text-gray-900 mb-4">Today's Summary</h2>
+          <h2 className="text-base font-semibold text-gray-900 mb-4">Summary</h2>
           <div className="grid grid-cols-2 gap-3">
             {[
-              { label: 'New Bookings', value: todaySummary.newBookings, icon: Package, color: 'text-blue-600 bg-blue-50' },
+              { label: 'Total Bookings', value: todaySummary.newBookings, icon: Package, color: 'text-blue-600 bg-blue-50' },
               { label: 'Completed', value: todaySummary.completedPickups, icon: CheckCircle2, color: 'text-emerald-600 bg-emerald-50' },
-              { label: 'Pending', value: todaySummary.pendingPickups, icon: AlertCircle, color: 'text-amber-600 bg-amber-50' },
+              { label: 'Unassigned', value: todaySummary.pendingPickups, icon: AlertCircle, color: 'text-amber-600 bg-amber-50' },
               { label: 'Assigned', value: todaySummary.assignedPickups, icon: Truck, color: 'text-blue-600 bg-blue-50' },
-              { label: "Today's Revenue", value: todaySummary.todayRevenue, icon: IndianRupee, color: 'text-violet-600 bg-violet-50' },
             ].map(({ label, value, icon: Icon, color }) => (
               <div key={label} className="flex items-center gap-3 p-3 rounded-lg bg-gray-50">
                 <div className={`p-2 rounded-lg ${color}`}><Icon className="h-4 w-4" /></div>
@@ -273,29 +251,30 @@ const AdminDashboardPage = () => {
             </div>
             <Link to="/admin/bookings" className="text-sm text-emerald-600 hover:text-emerald-700 font-medium">View all</Link>
           </div>
-          {pendingPickups.length === 0 ? (
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-5 w-5 animate-spin text-amber-500" />
+            </div>
+          ) : unassignedPickups.length === 0 ? (
             <p className="text-sm text-gray-400 text-center py-4">All pickups assigned 🎉</p>
           ) : (
             <div className="space-y-2.5 max-h-64 overflow-y-auto pr-1">
-              {pendingPickups.map((p) => (
+              {unassignedPickups.map((p) => (
                 <Link
                   key={p.id}
                   to="/admin/bookings"
                   className="flex items-center gap-3 p-3 rounded-lg bg-amber-50/50 hover:bg-amber-50 transition-colors"
                 >
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-medium text-gray-900 truncate">{p.customer}</p>
-                      {p.source === 'manual' && (
-                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded text-[10px] font-medium">
-                          <Phone className="h-2.5 w-2.5" /> Manual
-                        </span>
-                      )}
-                    </div>
+                    <p className="text-sm font-medium text-gray-900 truncate">{p.user_name}</p>
                     <div className="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
-                      <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{p.address}</span>
+                      <span className="flex items-center gap-1 truncate"><MapPin className="h-3 w-3 shrink-0" />{p.address}</span>
                       <span>·</span>
-                      <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{p.timeSlot}</span>
+                      <span className="flex items-center gap-1 whitespace-nowrap"><Clock className="h-3 w-3" />{p.slot_time}</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-xs text-gray-500 mt-0.5">
+                      <span>{p.garbage_type} · {p.estimated_weight} {p.unit_name}</span>
+                      <span className="font-medium text-gray-700">₹{p.total_amount}</span>
                     </div>
                   </div>
                   <ArrowUpRight className="h-4 w-4 text-amber-600 shrink-0" />
@@ -306,112 +285,99 @@ const AdminDashboardPage = () => {
         </div>
       </div>
 
-      {/* Recent Orders — with time slot & assign action */}
+      {/* Recent Pickups */}
       <div className="bg-white rounded-xl border border-gray-200">
         <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-gray-100">
-          <h2 className="text-base font-semibold text-gray-900">Recent Orders</h2>
-          <span className="text-sm text-gray-400">Latest 5</span>
+          <h2 className="text-base font-semibold text-gray-900">Recent Pickups</h2>
+          <span className="text-sm text-gray-400">Latest {Math.min(pickups.length, 10)}</span>
         </div>
 
-        {/* Desktop table */}
-        <div className="hidden sm:block overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-100">
-                <th className="px-6 py-3">Order ID</th>
-                <th className="px-6 py-3">Customer</th>
-                <th className="px-6 py-3">Time Slot</th>
-                <th className="px-6 py-3">Type</th>
-                <th className="px-6 py-3">Amount</th>
-                <th className="px-6 py-3">Scrap Boy</th>
-                <th className="px-6 py-3">Status</th>
-                <th className="px-6 py-3"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {recentOrders.map((order) => (
-                <tr key={order.id} className={`hover:bg-gray-50/50 transition-colors ${order.status === 'Pending' ? 'bg-amber-50/30' : ''}`}>
-                  <td className="px-6 py-3.5 font-medium text-gray-900">
-                    <div className="flex items-center gap-2">
-                      {order.id}
-                      {order.source === 'manual' && (
-                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded text-[10px] font-medium">
-                          <Phone className="h-2.5 w-2.5" /> Manual
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
+          </div>
+        ) : pickups.length === 0 ? (
+          <p className="text-sm text-gray-400 text-center py-8">No pickups yet</p>
+        ) : (
+          <>
+            {/* Desktop table */}
+            <div className="hidden sm:block overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-100">
+                    <th className="px-6 py-3">ID</th>
+                    <th className="px-6 py-3">Customer</th>
+                    <th className="px-6 py-3">Slot</th>
+                    <th className="px-6 py-3">Type</th>
+                    <th className="px-6 py-3">Weight</th>
+                    <th className="px-6 py-3">Amount</th>
+                    <th className="px-6 py-3">Status</th>
+                    <th className="px-6 py-3"></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {pickups.slice(0, 10).map((p) => (
+                    <tr key={p.id} className={`hover:bg-gray-50/50 transition-colors ${p.status === 'UNASSIGNED' ? 'bg-amber-50/30' : ''}`}>
+                      <td className="px-6 py-3.5 font-medium text-gray-900">#{p.id}</td>
+                      <td className="px-6 py-3.5 text-gray-700">{p.user_name}</td>
+                      <td className="px-6 py-3.5">
+                        <span className="inline-flex items-center gap-1 text-gray-500">
+                          <Clock className="h-3 w-3" />{p.slot_time}
                         </span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-6 py-3.5 text-gray-700">{order.customer}</td>
-                  <td className="px-6 py-3.5">
-                    <span className="inline-flex items-center gap-1 text-gray-500">
-                      <Clock className="h-3 w-3" />{order.timeSlot}
-                    </span>
-                  </td>
-                  <td className="px-6 py-3.5 text-gray-500">{order.type}</td>
-                  <td className="px-6 py-3.5 font-medium text-gray-900">{order.amount}</td>
-                  <td className="px-6 py-3.5">
-                    {order.scrapBoy
-                      ? <span className="text-gray-700">{order.scrapBoy}</span>
-                      : <span className="text-amber-600 text-xs font-medium">Unassigned</span>
-                    }
-                  </td>
-                  <td className="px-6 py-3.5">
-                    <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-medium ${statusStyle[order.status]}`}>
-                      {order.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-3.5">
-                    {order.status === 'Pending' && (
-                      <Link
-                        to="/admin/bookings"
-                        className="px-2.5 py-1 bg-emerald-600 text-white rounded-lg text-xs font-medium hover:bg-emerald-700 transition-colors"
-                      >
-                        Assign
-                      </Link>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                      </td>
+                      <td className="px-6 py-3.5 text-gray-500">{p.garbage_type}</td>
+                      <td className="px-6 py-3.5 text-gray-500">{p.estimated_weight} {p.unit_name}</td>
+                      <td className="px-6 py-3.5 font-medium text-gray-900">₹{p.total_amount}</td>
+                      <td className="px-6 py-3.5">
+                        <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-medium ${statusStyle[p.status] || 'bg-gray-50 text-gray-700'}`}>
+                          {p.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-3.5">
+                        {p.status === 'UNASSIGNED' && (
+                          <Link
+                            to="/admin/bookings"
+                            className="px-2.5 py-1 bg-emerald-600 text-white rounded-lg text-xs font-medium hover:bg-emerald-700 transition-colors"
+                          >
+                            Assign
+                          </Link>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
-        {/* Mobile cards */}
-        <div className="sm:hidden divide-y divide-gray-100">
-          {recentOrders.map((order) => (
-            <div key={order.id} className={`px-4 py-4 space-y-2 ${order.status === 'Pending' ? 'bg-amber-50/30' : ''}`}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-gray-900">{order.id}</span>
-                  {order.source === 'manual' && (
-                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded text-[10px] font-medium">
-                      <Phone className="h-2.5 w-2.5" /> Manual
-                    </span>
+            {/* Mobile cards */}
+            <div className="sm:hidden divide-y divide-gray-100">
+              {pickups.slice(0, 10).map((p) => (
+                <div key={p.id} className={`px-4 py-4 space-y-2 ${p.status === 'UNASSIGNED' ? 'bg-amber-50/30' : ''}`}>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-gray-900">#{p.id}</span>
+                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${statusStyle[p.status] || 'bg-gray-50 text-gray-700'}`}>{p.status}</span>
+                  </div>
+                  <p className="text-sm text-gray-700">{p.user_name}</p>
+                  <div className="flex items-center gap-2 text-xs text-gray-500">
+                    <Clock className="h-3 w-3" />{p.slot_time}
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-500">{p.garbage_type} · {p.estimated_weight} {p.unit_name}</span>
+                    <span className="text-sm font-semibold text-gray-900">₹{p.total_amount}</span>
+                  </div>
+                  {p.status === 'UNASSIGNED' && (
+                    <Link
+                      to="/admin/bookings"
+                      className="inline-flex items-center gap-1 px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-medium hover:bg-emerald-700 transition-colors"
+                    >
+                      <Truck className="h-3 w-3" /> Assign Scrap Boy
+                    </Link>
                   )}
                 </div>
-                <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${statusStyle[order.status]}`}>{order.status}</span>
-              </div>
-              <p className="text-sm text-gray-700">{order.customer}</p>
-              <div className="flex items-center gap-2 text-xs text-gray-500">
-                <Clock className="h-3 w-3" />{order.timeSlot}
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-500">
-                  {order.scrapBoy || <span className="text-amber-600 font-medium">Unassigned</span>}
-                </span>
-                <span className="text-sm font-semibold text-gray-900">{order.amount}</span>
-              </div>
-              {order.status === 'Pending' && (
-                <Link
-                  to="/admin/bookings"
-                  className="inline-flex items-center gap-1 px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-medium hover:bg-emerald-700 transition-colors"
-                >
-                  <Truck className="h-3 w-3" /> Assign Scrap Boy
-                </Link>
-              )}
+              ))}
             </div>
-          ))}
-        </div>
+          </>
+        )}
       </div>
       {/* Add Pickup Modal */}
       <AddPickupModal open={addModalOpen} onClose={() => setAddModalOpen(false)} onAdd={handleAddPickup} />

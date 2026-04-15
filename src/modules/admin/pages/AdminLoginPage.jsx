@@ -1,35 +1,41 @@
-import { useState } from 'react';
-import { useDispatch } from 'react-redux';
+import { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { Lock, User, Eye, EyeOff } from 'lucide-react';
+import { Lock, User, Eye, EyeOff, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { loginSuccess } from '../features/authSlice';
+import { adminLogin, clearError } from '../features/authSlice';
 
 const LOGO_URL = 'https://res.cloudinary.com/dnimidvwh/image/upload/v1773520272/kabadi-logo_d6ftxe.png';
 
 const AdminLoginPage = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { isAuthenticated, loading, error } = useSelector((s) => s.adminAuth);
 
-  const handleSubmit = (e) => {
+  // Redirect if already logged in
+  useEffect(() => {
+    if (isAuthenticated) navigate('/admin', { replace: true });
+  }, [isAuthenticated, navigate]);
+
+  // Show error toast
+  useEffect(() => {
+    if (error) {
+      toast.error(error);
+      dispatch(clearError());
+    }
+  }, [error, dispatch]);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-
     if (!username.trim()) return toast.error('Username is required');
     if (!password.trim()) return toast.error('Password is required');
 
-    // TODO: Replace with real API call
-    if (username === 'admin' && password === 'admin123') {
-      dispatch(loginSuccess({ name: username, role: 'admin' }));
+    const result = await dispatch(adminLogin({ username, password }));
+    if (adminLogin.fulfilled.match(result)) {
       toast.success('Welcome back, Admin!');
-      navigate('/admin', { replace: true });
-    } else {
-      setError('Invalid username or password');
-      toast.error('Invalid username or password');
     }
   };
 
@@ -42,10 +48,6 @@ const AdminLoginPage = () => {
           <p className="text-sm text-gray-500 mt-1">Sign in to access the dashboard</p>
         </div>
 
-        {error && (
-          <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2 mb-4 text-center">{error}</p>
-        )}
-
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">Username</label>
@@ -57,7 +59,8 @@ const AdminLoginPage = () => {
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="Enter username"
                 required
-                className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors"
+                disabled={loading}
+                className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors disabled:opacity-50"
               />
             </div>
           </div>
@@ -72,7 +75,8 @@ const AdminLoginPage = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter password"
                 required
-                className="w-full pl-10 pr-11 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors"
+                disabled={loading}
+                className="w-full pl-10 pr-11 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors disabled:opacity-50"
               />
               <button
                 type="button"
@@ -86,9 +90,10 @@ const AdminLoginPage = () => {
 
           <button
             type="submit"
-            className="w-full py-2.5 bg-emerald-600 text-white text-sm font-semibold rounded-lg hover:bg-emerald-700 transition-colors shadow-sm mt-2"
+            disabled={loading}
+            className="w-full py-2.5 bg-emerald-600 text-white text-sm font-semibold rounded-lg hover:bg-emerald-700 transition-colors shadow-sm mt-2 disabled:opacity-50 flex items-center justify-center gap-2"
           >
-            Sign In
+            {loading ? <><Loader2 className="h-4 w-4 animate-spin" /> Signing in...</> : 'Sign In'}
           </button>
         </form>
       </div>

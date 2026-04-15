@@ -29,8 +29,10 @@ const LandingLayout = () => {
       setTimeout(() => {
         document.querySelector(location.hash)?.scrollIntoView({ behavior: 'smooth' });
       }, 100);
+    } else {
+      window.scrollTo(0, 0);
     }
-  }, [location]);
+  }, [location.pathname]);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);

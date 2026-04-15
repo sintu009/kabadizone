@@ -15,6 +15,8 @@ const HomePage = lazy(() => import('../modules/landing/pages/HomePage'));
 const ScrapRatePage = lazy(() => import('../modules/landing/pages/ScrapRatePage'));
 const AboutPage = lazy(() => import('../modules/landing/pages/AboutPage'));
 const ContactPage = lazy(() => import('../modules/landing/pages/ContactPage'));
+const PrivacyPolicyPage = lazy(() => import('../modules/landing/pages/PrivacyPolicyPage'));
+const TermsOfServicePage = lazy(() => import('../modules/landing/pages/TermsOfServicePage'));
 
 const ScrapboyLoginPage = lazy(() => import('../modules/scrapboy/pages/LoginPage'));
 const ScrapboyDashboard = lazy(() => import('../modules/scrapboy/pages/DashboardPage'));
@@ -73,6 +75,22 @@ export const router = createBrowserRouter([
         element: (
           <Suspense fallback={<PageLoader />}>
             <ContactPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'privacy',
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <PrivacyPolicyPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'terms',
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <TermsOfServicePage />
           </Suspense>
         ),
       },

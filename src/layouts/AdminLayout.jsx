@@ -18,6 +18,7 @@ const NAV_ITEMS = [
   { label: 'Scrap Boys', to: '/admin/scrapboys', icon: Truck },
   { label: 'Wallet', to: '/admin/wallet', icon: Wallet },
   { label: 'Pickup Bookings', to: '/admin/bookings', icon: CalendarClock },
+  { label: 'Settings', to: '/admin/settings', icon: Settings },
 ];
 
 const AdminLayout = () => {
@@ -148,10 +149,10 @@ const AdminLayout = () => {
                 className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
               >
                 <div className="h-8 w-8 rounded-full bg-emerald-600 flex items-center justify-center text-white text-sm font-semibold shrink-0">
-                  {(user?.name?.[0] || 'A').toUpperCase()}
+                  {(user?.username?.[0] || 'A').toUpperCase()}
                 </div>
                 <span className="hidden sm:block text-sm font-medium text-gray-700 max-w-[120px] truncate">
-                  {user?.name || 'Admin'}
+                  {user?.username || 'Admin'}
                 </span>
                 <ChevronDown className="hidden sm:block h-4 w-4 text-gray-400" />
               </button>
@@ -161,7 +162,7 @@ const AdminLayout = () => {
                   <div className="fixed inset-0 z-10" onClick={() => setProfileOpen(false)} />
                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 py-1.5 z-20">
                     <div className="px-4 py-2 border-b border-gray-100">
-                      <p className="text-sm font-medium text-gray-900 truncate">{user?.name || 'Admin'}</p>
+                      <p className="text-sm font-medium text-gray-900 truncate">{user?.username || 'Admin'}</p>
                       <p className="text-xs text-gray-500">{user?.role || 'Administrator'}</p>
                     </div>
                     <Link
