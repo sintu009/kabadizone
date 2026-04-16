@@ -27,6 +27,7 @@ class AuthService {
         username: user.username,
         role: user.role,
         user_id: user.user_id,
+        scrap_collector_id: user.scrap_collector_id || null,
       },
       process.env.JWT_SECRET,
       {
@@ -41,6 +42,9 @@ class AuthService {
         username: user.username,
         role: user.role,
         user_id: user.user_id,
+        scrap_collector_id: user.scrap_collector_id || null,
+        name: user.name || null,
+        phone: user.phone_number || null,
       },
     };
   }

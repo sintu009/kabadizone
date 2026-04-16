@@ -41,7 +41,9 @@
     "submit": "Submit Booking",
     "contact": "Contact",
     "schedule": "Schedule",
-    "type": "Type"
+    "type": "Type",
+    "useMyLocation": "Use my location",
+    "locating": "Locating..."
   },
   "rates": {
     "subtitle": "Live Market Rates",

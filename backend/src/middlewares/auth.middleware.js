@@ -15,12 +15,12 @@ module.exports = (req, res, next) => {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // Attach user info to request
     req.user = {
       id: decoded.id,
       username: decoded.username,
       role: decoded.role,
       user_id: decoded.user_id,
+      scrap_collector_id: decoded.scrap_collector_id || null,
     };
 
     next();

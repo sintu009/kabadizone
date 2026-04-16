@@ -41,7 +41,7 @@ const AdminPickupBookingsPage = () => {
     setLoading(true);
     Promise.all([
       apiClient.get(API_ENDPOINTS.PICKUP_REQUESTS.BASE),
-      apiClient.get(API_ENDPOINTS.ADMIN.SCRAP_COLLECTORS),
+      apiClient.get(API_ENDPOINTS.ADMIN.SCRAP_COLLECTORS_DROPDOWN),
     ])
       .then(([pickupRes, scrapRes]) => {
         setBookings(pickupRes.data || []);
@@ -235,7 +235,7 @@ const AdminPickupBookingsPage = () => {
                     onClick={() => requestAssign(assigningId, sb.id, sb.name)}
                     className="px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-medium text-gray-700 hover:border-emerald-400 hover:bg-emerald-50 transition-colors"
                   >
-                    {sb.name} <span className="text-gray-400">· {sb.phone}</span>
+                    {sb.name} <span className="text-gray-400">· {sb.phone_number}</span>
                   </button>
                 ))}
                 <button onClick={() => setAssigningId(null)} className="text-xs text-gray-400 hover:text-gray-600 ml-1">Cancel</button>
@@ -297,7 +297,7 @@ const AdminPickupBookingsPage = () => {
                           >
                             <div>
                               <p className="text-sm font-medium text-gray-900">{sb.name}</p>
-                              <p className="text-xs text-gray-500">{sb.phone}</p>
+                              <p className="text-xs text-gray-500">{sb.phone_number}</p>
                             </div>
                             <Truck className="h-4 w-4 text-gray-400" />
                           </button>

@@ -42,10 +42,11 @@ class PickupController {
     console.log("Updating status to:", pickupRequestId, status);
     // COMPLETED = special business flow
     if (status === "COMPLETED") {
+      const imagePath = image ? image.filename : null;
       await PickupService.completePickup(
         scrapCollectorId,
         pickupRequestId,
-        image || null,
+        imagePath,
         actual_weight,
         final_price,
         username,

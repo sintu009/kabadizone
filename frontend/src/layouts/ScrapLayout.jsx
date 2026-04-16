@@ -1,14 +1,22 @@
+import { useEffect } from 'react';
 import { Outlet, NavLink } from 'react-router-dom';
 import { LayoutDashboard, Truck, IndianRupee, User, Wallet } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
+import { fetchMyWallet } from '../modules/scrapboy/features/walletSlice';
 
 const LOGO_URL = 'https://res.cloudinary.com/dnimidvwh/image/upload/v1773520272/kabadi-logo_d6ftxe.png';
 
 const ScrapLayout = () => {
   const { t, i18n } = useTranslation();
+  const dispatch = useDispatch();
   const isHindi = i18n.language === 'hi';
   const { balance } = useSelector((s) => s.scrapboyWallet);
+  const { isAuthenticated } = useSelector((s) => s.scrapboyAuth);
+
+  useEffect(() => {
+    if (isAuthenticated) dispatch(fetchMyWallet());
+  }, [dispatch, isAuthenticated]);
 
   const toggleLang = () => i18n.changeLanguage(isHindi ? 'en' : 'hi');
 
@@ -28,12 +36,10 @@ const ScrapLayout = () => {
             <span className="font-bold text-gray-900 text-base">Kabadizone</span>
           </div>
           <div className="flex items-center gap-2">
-            {/* Wallet Balance */}
             <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700">
               <Wallet className="h-3.5 w-3.5" />
-              <span className="text-xs font-bold">{balance.toLocaleString()}</span>
+              <span className="text-xs font-bold">₹{Number(balance).toLocaleString()}</span>
             </div>
-            {/* Language Toggle */}
             <button
               onClick={toggleLang}
               className="flex items-center gap-1 px-2.5 py-1 rounded-full border border-gray-200 bg-gray-50 hover:bg-gray-100 transition-colors"

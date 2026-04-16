@@ -18,6 +18,7 @@ export const API_ENDPOINTS = {
     BOOKINGS: '/admin/bookings',
     ASSIGN_BOOKING: (id) => `/admin/bookings/${id}/assign`,
     SCRAP_COLLECTORS: '/scrap-collectors',
+    SCRAP_COLLECTORS_DROPDOWN: '/scrap-collectors/dropdown',
   },
   WALLETS: {
     BASE: '/wallets',
@@ -31,6 +32,9 @@ export const API_ENDPOINTS = {
     GUEST: '/pickup-requests/guest',
     GUEST_STATUS: '/pickup-requests/guest/status',
     UPDATE_STATUS: (id) => `/pickup-requests/pickups/${id}/status`,
+  },
+  COLLECTOR: {
+    DASHBOARD: '/scrap-collectors/dashboard',
   },
   PICKUP_ASSIGNMENTS: {
     BASE: '/pickup-assignments',

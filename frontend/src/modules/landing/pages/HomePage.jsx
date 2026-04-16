@@ -1,4 +1,4 @@
-import { ArrowRight, PackageOpen, Recycle, DollarSign, Clock, ShieldCheck, Leaf, Truck, Phone, MapPin, CalendarDays, Package, ChevronLeft, Search, Loader2 } from 'lucide-react';
+import { ArrowRight, PackageOpen, Recycle, DollarSign, Clock, ShieldCheck, Leaf, Truck, Phone, MapPin, CalendarDays, Package, ChevronLeft, Search, Loader2, LocateFixed } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -26,7 +26,40 @@ const MapUpdater = ({ center }) => {
   return null;
 };
 
-const BookPickupForm = () => {
+const useGeolocation = () => {
+  const [userLocation, setUserLocation] = useState(null);
+  const [locating, setLocating] = useState(false);
+
+  const requestLocation = useCallback(() => {
+    if (!navigator.geolocation) return Promise.resolve(null);
+    setLocating(true);
+    return new Promise((resolve) => {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const loc = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+          setUserLocation(loc);
+          setLocating(false);
+          resolve(loc);
+        },
+        (err) => {
+          console.warn('Geolocation error:', err.message);
+          setLocating(false);
+          resolve(null);
+        },
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+      );
+    });
+  }, []);
+
+  // Ask permission on mount
+  useEffect(() => {
+    requestLocation();
+  }, [requestLocation]);
+
+  return { userLocation, locating, requestLocation };
+};
+
+const BookPickupForm = ({ userLocation, locating, requestLocation }) => {
   const { t } = useTranslation();
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({ name: '', phone: '', address: '', date: '', slot_id: '', scrapTypes: [], latitude: 0, longitude: 0 });
@@ -39,6 +72,43 @@ const BookPickupForm = () => {
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
   const debounceRef = useRef(null);
+  const appliedLocationRef = useRef(false);
+
+  const reverseGeocode = useCallback((lat, lon) => {
+    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.display_name) {
+          setForm((f) => ({ ...f, address: data.display_name, latitude: lat, longitude: lon }));
+          setSearchQuery(data.display_name);
+          setMapCenter([lat, lon]);
+          setErrors((e) => ({ ...e, address: undefined }));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const applyLocation = useCallback((loc) => {
+    if (!loc) return;
+    setMapCenter([loc.lat, loc.lon]);
+    setForm((f) => ({ ...f, latitude: loc.lat, longitude: loc.lon }));
+    reverseGeocode(loc.lat, loc.lon);
+  }, [reverseGeocode]);
+
+  // Apply user location when it becomes available
+  useEffect(() => {
+    if (userLocation && !appliedLocationRef.current) {
+      appliedLocationRef.current = true;
+      applyLocation(userLocation);
+    }
+  }, [userLocation, applyLocation]);
+
+  // Re-ask when user enters step 2 if location still not set
+  useEffect(() => {
+    if (step === 2 && form.latitude === 0 && form.longitude === 0) {
+      requestLocation().then((loc) => { if (loc) applyLocation(loc); });
+    }
+  }, [step, form.latitude, form.longitude, requestLocation, applyLocation]);
 
   useEffect(() => {
     apiClient.get(API_ENDPOINTS.SLOT_TIMES.BASE).then((res) => {
@@ -222,7 +292,18 @@ const BookPickupForm = () => {
         {step === 2 && (
           <div className="space-y-4">
             <div className="relative">
-              <label className="block text-sm font-medium text-gray-700 mb-2">{t('bookPickup.address')}</label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-medium text-gray-700">{t('bookPickup.address')}</label>
+                <button
+                  type="button"
+                  onClick={() => requestLocation().then((loc) => { if (loc) applyLocation(loc); })}
+                  disabled={locating}
+                  className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 hover:text-emerald-700 disabled:text-gray-400"
+                >
+                  <LocateFixed className={`h-3.5 w-3.5 ${locating ? 'animate-spin' : ''}`} />
+                  {locating ? t('bookPickup.locating') : t('bookPickup.useMyLocation')}
+                </button>
+              </div>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <input
@@ -347,6 +428,7 @@ const BookPickupForm = () => {
 
 const HomePage = () => {
   const { t } = useTranslation();
+  const geo = useGeolocation();
   return (
     <div className="flex flex-col min-h-screen relative bg-white">
       {/* Subtle Background */}
@@ -407,7 +489,7 @@ const HomePage = () => {
               <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900">{t('bookPickup.title')}</h3>
             </div>
 
-            <BookPickupForm />
+            <BookPickupForm userLocation={geo.userLocation} locating={geo.locating} requestLocation={geo.requestLocation} />
           </div>
         </section>
 

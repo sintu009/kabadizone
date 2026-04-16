@@ -153,7 +153,7 @@ router.post("/debit", auth, role("ADMIN"), Controller.debit);
  *                       type: string
  *                       format: date-time
  */
-router.get("/", auth, role("ADMIN"), Controller.get);
+router.get("/", auth, role("ADMIN", "COLLECTOR"), Controller.get);
 
 /**
  * @swagger
@@ -207,6 +207,6 @@ router.get("/", auth, role("ADMIN"), Controller.get);
  *                         type: string
  *                         format: date-time
  */
-router.get("/transactions", auth, role("ADMIN"), Controller.transactions);
+router.get("/transactions", auth, role("ADMIN", "COLLECTOR"), Controller.transactions);
 
 module.exports = router;
